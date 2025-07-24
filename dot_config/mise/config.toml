@@ -1,0 +1,14 @@
+[tools]
+go = "latest"
+node = "latest"
+npm = "latest"
+python = "latest"
+rust = "latest"
+neovim = "latest"
+ripgrep = "latest"
+lsd = "latest"
+bat = "latest"
+fzf = "latest"
+fd = "latest"
+chezmoi = "latest"
+usage = "latest"   # for mise completion

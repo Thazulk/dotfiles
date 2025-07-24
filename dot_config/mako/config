@@ -1,0 +1,113 @@
+# ~/.config/mako/config
+# Custom Mako Configuration - Bottom Right Corner
+
+# === APPEARANCE ===
+background-color=#1a1b26
+text-color=#c0caf5
+border-color=#7aa2f7
+border-size=2
+border-radius=10
+padding=12,16
+margin=12
+width=320
+height=100
+max-icon-size=48
+
+# === FONT & TEXT ===
+font=Noto Sans 11
+markup=1
+format=<b>%s</b>\n%b
+max-history=30
+
+# === POSITIONING ===
+anchor=bottom-right
+layer=overlay
+
+# === BEHAVIOR ===
+default-timeout=6000
+ignore-timeout=1
+max-visible=4
+group-by=app-name
+
+# === PROGRESS BAR ===
+progress-color=#7aa2f7
+
+# === ACTIONS & BUTTONS ===
+actions=1
+
+# === URGENCY LEVELS ===
+[urgency=low]
+background-color=#16161e
+border-color=#414868
+default-timeout=4000
+
+[urgency=normal]
+background-color=#1a1b26
+border-color=#7aa2f7
+default-timeout=6000
+
+[urgency=critical]
+background-color=#1a1b26
+border-color=#f7768e
+text-color=#f7768e
+default-timeout=0
+border-size=3
+
+# === APP-SPECIFIC RULES ===
+
+[app-name=discord]
+background-color=#5865f2
+border-color=#5865f2
+max-icon-size=32
+
+[app-name=Spotify]
+background-color=#1db954
+text-color=#ffffff
+border-color=#1ed760
+default-timeout=3000
+
+[app-name=firefox]
+background-color=#ff7139
+border-color=#ff7139
+
+[app-name=chromium]
+background-color=#4285f4
+border-color=#4285f4
+
+[app-name=code]
+background-color=#007acc
+border-color=#007acc
+
+[app-name=kitty]
+background-color=#24283b
+border-color=#414868
+
+[app-name=alacritty]
+background-color=#24283b
+border-color=#414868
+
+[app-name=pamixer]
+background-color=#16161e
+border-color=#ff9e64
+default-timeout=2000
+
+[app-name=brightnessctl]
+background-color=#16161e
+border-color=#ff9e64
+default-timeout=2000
+
+[app-name=NetworkManager]
+background-color=#7aa2f7
+border-color=#7aa2f7
+text-color=#1a1b26
+
+[category=email.arrived]
+background-color=#bb9af7
+border-color=#bb9af7
+default-timeout=10000
+
+[category=im.received]
+background-color=#9ece6a
+border-color=#9ece6a
+text-color=#1a1b26
+
