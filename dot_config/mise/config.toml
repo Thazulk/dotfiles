@@ -12,3 +12,5 @@ fzf = "latest"
 fd = "latest"
 # chezmoi = "latest"
 usage = "latest" # for mise completion
+tmux = "latest"
+github-cli = "latest"
