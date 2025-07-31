@@ -10,5 +10,5 @@ lsd = "latest"
 bat = "latest"
 fzf = "latest"
 fd = "latest"
-chezmoi = "latest"
-usage = "latest"   # for mise completion
+# chezmoi = "latest"
+usage = "latest" # for mise completion
