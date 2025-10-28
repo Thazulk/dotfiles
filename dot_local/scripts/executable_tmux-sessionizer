@@ -6,7 +6,7 @@ setopt NULL_GLOB
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    config_file="$HOME/.dotfiles/.local/scripts/sessionizer-paths.conf"
+    config_file="$HOME/.local/scripts/sessionizer-paths.conf"
     if [[ ! -f "$config_file" ]]; then
         echo "Config file not found at $config_file"
         exit 1

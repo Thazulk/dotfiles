@@ -14,3 +14,6 @@ fd = "latest"
 usage = "latest" # for mise completion
 tmux = "latest"
 github-cli = "latest"
+
+[settings]
+idiomatic_version_file_enable_tools = ["node"]

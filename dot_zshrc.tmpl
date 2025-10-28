@@ -1,3 +1,9 @@
+# OS-specific initialization
+{{ if eq .chezmoi.os "darwin" }}
+# Amazon Q pre block. Keep at the top of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
+{{ end }}
+
 HISTFILE=~/.zsh_history
 HISTSIZE=100000
 SAVEHIST=100000
@@ -15,10 +21,12 @@ fpath+=($HOME/.zsh/pure)
 autoload -U promptinit; promptinit
 prompt pure
 
+{{ if eq .chezmoi.os "linux" }}
 #zsh completion
 fpath=($HOME/zsh-completions/src $fpath)
 autoload -Uz compinit
 compinit
+{{ end }}
 
 # Git aliases
 alias gst='git status'
@@ -36,8 +44,10 @@ alias gswc='git switch -c'
 # finds all files recursively and sorts by last modification, ignore hidden files
 alias lastmod='find . -type f -not -path "*/\.*" -exec ls -lrt {} +'
 
+{{ if eq .chezmoi.os "linux" }}
 # yay
 alias yu="yay -Syu"
+{{ end }}
 
 # docker
 alias fe-up="docker compose -f docker-compose-dev.yml up"
@@ -74,6 +84,15 @@ export NVM_DIR="$HOME/.nvm"
 # Custom scripts directory
 export PATH=$HOME/.local/scripts:$PATH
 
+# OS-specific configurations
+{{ if eq .chezmoi.os "darwin" }}
+# Android Studio (macOS)
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+{{ end }}
+
 # Go configuration - dynamic solution for cross-platform compatibility
 if command -v go >/dev/null 2>&1; then
   export GOPATH=$(go env GOPATH 2>/dev/null || echo "$HOME/go")
@@ -106,13 +125,10 @@ bindkey -s "^[f" "vscode-sessionizer\n"
 # Enable vi mode
 bindkey -v
 
+{{ if eq .chezmoi.os "linux" }}
 # export PYENV_ROOT="$HOME/.pyenv"
 # [[ -d $PYENV_ROOT/bin ]] && export PATH="$PYENV_ROOT/bin:$PATH"
 # eval "$(pyenv init -)"
-
-
-# Generated for envman. Do not edit.
-[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
 
 # pnpm
 # export PNPM_HOME="/home/pszedmak/.local/share/pnpm"
@@ -122,7 +138,12 @@ bindkey -v
 # esac
 # # pnpm end
 # export PATH=$PATH:$HOME/go/bin
+{{ end }}
 
+# Generated for envman. Do not edit.
+[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
+
+{{ if eq .chezmoi.os "linux" }}
 # fnm
 FNM_PATH="/home/thazulk/.local/share/fnm"
 if [ -d "$FNM_PATH" ]; then
@@ -130,20 +151,27 @@ if [ -d "$FNM_PATH" ]; then
   eval "`fnm env`"
 fi
 
-#Tmux
-
-alias tks="tmux kill-server"
-
 ### MANAGED BY RANCHER DESKTOP START (DO NOT EDIT)
 export PATH="/home/thazulk/.rd/bin:$PATH"
 ### MANAGED BY RANCHER DESKTOP END (DO NOT EDIT)
-#
 
 # Start ssh-agent on login
 # eval "$(ssh-agent -s)"
 # ssh-add ~/.ssh/id_rsa 2>/dev/null
+{{ end }}
 
+#Tmux
+
+alias tks="tmux kill-server"
+
+{{ if eq .chezmoi.os "darwin" }}
+eval "$(/Users/szedmakpeter/.local/bin/mise activate zsh)"
+
+# Amazon Q post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
+{{ else if eq .chezmoi.os "linux" }}
 eval "$(/home/thazulk/.local/bin/mise activate zsh)"
 
 source <(kubectl completion zsh)
 compdef __start_kubectl k
+{{ end }}
