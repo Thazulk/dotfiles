@@ -40,6 +40,13 @@ alias gcb='git checkout -b'
 alias gbr='git branch'
 alias gsw='git switch'
 alias gswc='git switch -c'
+# git stash push and promp
+alias gsp='git stash push -u -m "$(date +%Y-%m-%d_%H-%M-%S)"'
+alias gsa='git stash apply'
+alias gsl='git stash list'
+alias gsd='git stash drop'
+alias gpop='git stash pop'
+
 
 # finds all files recursively and sorts by last modification, ignore hidden files
 alias lastmod='find . -type f -not -path "*/\.*" -exec ls -lrt {} +'
