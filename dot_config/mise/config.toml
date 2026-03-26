@@ -14,6 +14,7 @@ fd = "latest"
 usage = "latest" # for mise completion
 tmux = "latest"
 github-cli = "latest"
+chezmoi = "2.67.1"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
