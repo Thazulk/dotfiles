@@ -15,6 +15,7 @@ usage = "latest" # for mise completion
 tmux = "latest"
 github-cli = "latest"
 chezmoi = "2.67.1"
+rust-analyzer = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node"]
