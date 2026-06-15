@@ -11,11 +11,12 @@ bat = "latest"
 fzf = "latest"
 fd = "latest"
 # chezmoi = "latest"
-usage = "latest" # for mise completion
+usage = "latest"
 tmux = "latest"
 github-cli = "latest"
-chezmoi = "2.67.1"
-rust-analyzer = "latest"
+java = "temurin-17"
+zig = "latest"
+maven = "3.9"
 
 [settings]
-idiomatic_version_file_enable_tools = ["node"]
+idiomatic_version_file_enable_tools = ["node", "go"]

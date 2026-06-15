@@ -63,7 +63,7 @@ return {
       --     fg = c.fg_dark,
       --     bg = "none",
       --     blend = 100,
-      --   }
+      --   nord
       -- end,
     },
   }, -- add gruvbox
