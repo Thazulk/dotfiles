@@ -154,6 +154,14 @@ The `~/.cursor/` directory works the same on all platforms (`dot_cursor/` prefix
 - If the rendered script **content changed** (first apply, or `extensions.txt` modified → SHA line changes), it **runs**
 - Calls `cursor --install-extension` for each line in `extensions.txt`
 
+| Where you run `apply` | Extension targets |
+|-----------------------|-------------------|
+| macOS / native Linux | Local `cursor` CLI |
+| Windows | `cursor` or `cursor.cmd` |
+| **WSL** | **Both** Windows `cursor.cmd` **and** WSL Linux `cursor` (if each CLI is available) |
+
+Windows and WSL maintain **separate extension directories** — the same `extensions.txt` is installed into both when you apply from WSL.
+
 > **Note:** `chezmoi apply --dry-run` does **not** execute `run_onchange` scripts.
 
 ### `sync-cursor` script
@@ -169,7 +177,7 @@ What it does:
 1. Live `settings.json` → `.chezmoitemplates/cursor-settings.json` (overwrites!)
 2. Keybindings → template (macOS `cmd+i` / others `ctrl+i`)
 3. Snippets via `chezmoi re-add`
-4. Refreshes extension list → `extensions.txt`
+4. Refreshes extension list → `extensions.txt` (on WSL: **merges** Windows + WSL Linux extension lists)
 5. Skills and `mcp.json` via `chezmoi re-add`
 
 **Warning:** After `sync-cursor`, OS-specific `{{ if }}` blocks are **removed** from the settings template because the live file is raw JSON. Re-add them manually, or edit `.chezmoitemplates/cursor-settings.json` directly.
@@ -199,25 +207,26 @@ What it does:
 
 [Machine B / other OS] chezmoi update
     → settings, keybindings, skills are applied
-    → extensions install automatically (run_onchange)
+    → extensions install automatically (run_onchange; WSL: both Windows + Linux)
 ```
 
 ### WSL + Windows Cursor (important)
 
-If you run **chezmoi inside WSL** but use the **native Windows Cursor app**, there are two separate config locations:
+If you run **chezmoi inside WSL**, you typically have **two separate Cursor installs**:
 
-| Where chezmoi runs | Where settings land on `apply` | Where Windows Cursor reads |
-|--------------------|--------------------------------|----------------------------|
-| WSL (Linux) | `~/.config/Cursor/User/` | `%APPDATA%\Cursor\User\` |
+| Install | Settings path | Extensions path |
+|---------|---------------|-----------------|
+| Windows (native app) | `%APPDATA%\Cursor\User\` | `%USERPROFILE%\.cursor\extensions\` |
+| WSL (Remote / Linux CLI) | `~/.config/Cursor/User/` | `~/.cursor/extensions/` |
 
-Windows Cursor does **not** read the WSL Linux path. This repo handles that with two `run_onchange` scripts:
+Windows Cursor does **not** read the WSL Linux settings path. This repo handles cross-install sync with two `run_onchange` scripts:
 
 1. **`run_onchange_after_sync-cursor-settings-to-windows.sh`** — detects WSL and copies `settings.json`, `keybindings.json`, and `snippets/` from `~/.config/Cursor/User/` to the Windows AppData path (`/mnt/c/Users/.../AppData/Roaming/Cursor/User/`).
-2. **`run_onchange_after_install-cursor-extensions.sh`** — on WSL, installs extensions via the **Windows** `cursor.cmd`, not the Linux CLI.
+2. **`run_onchange_after_install-cursor-extensions.sh`** — on WSL, installs every extension from `extensions.txt` via **both** the Windows `cursor.cmd` **and** the WSL Linux `cursor` CLI (when each is available).
 
 After `chezmoi apply` in WSL, both scripts run automatically.
 
-**`sync-cursor` in WSL** reads from the **Windows** Cursor config path (not `~/.config/Cursor/User/`), so changes made in the Windows app are captured correctly.
+**`sync-cursor` in WSL** reads settings from the **Windows** Cursor config path (not `~/.config/Cursor/User/`), so changes made in the Windows app are captured correctly. For extensions, it **merges** `--list-extensions` from Windows and WSL into a single `extensions.txt`.
 
 If auto-detection fails, set overrides in `~/.config/chezmoi/chezmoi.toml`:
 
@@ -230,11 +239,16 @@ If auto-detection fails, set overrides in `~/.config/chezmoi/chezmoi.toml`:
 **WSL workflow:**
 
 ```bash
-chezmoi update          # apply + sync to Windows Cursor + install extensions
+chezmoi update          # apply + sync settings to Windows + install extensions on Windows & WSL
 # or after editing settings in Windows Cursor:
 sync-cursor && git commit ... && git push
-chezmoi apply           # re-sync to Windows if needed
+chezmoi apply           # re-sync settings/extensions to both installs if needed
 ```
+
+**WSL extension requirements:** For dual install to work, both CLIs should be reachable from WSL:
+
+- Windows: `cursor.cmd` (auto-detected under `/mnt/c/Users/.../AppData/Local/Programs/cursor/...`)
+- WSL Linux: `cursor` on PATH (usually from Cursor's remote server / `~/.cursor-server/.../remote-cli/cursor` when you've opened a WSL folder in Cursor at least once)
 
 ---
 
@@ -379,10 +393,11 @@ Hyprland machine configs:
 
 ### WSL + Windows Cursor
 
-- Run `chezmoi apply` in WSL — settings are copied to Windows AppData automatically
-- `sync-cursor` reads from Windows Cursor paths when run in WSL
+- Run `chezmoi apply` in WSL — settings are copied to Windows AppData automatically; extensions install to **both** Windows and WSL Cursor
+- `sync-cursor` reads settings from Windows Cursor paths when run in WSL; extension list merges Windows + WSL
 - If paths differ (non-default Windows username), configure `windowsAppDataRoaming` in `chezmoi.toml`
 - Restart Windows Cursor after apply if settings don't appear immediately
+- Open a WSL folder in Cursor once so the Linux `cursor` CLI is available for WSL extension install
 
 ---
 
@@ -414,7 +429,8 @@ chezmoi add --secrets ignore ~/.cursor/skills
 | Diff between live and source | `chezmoi diff` — then `chezmoi apply` or `chezmoi re-add` |
 | OS blocks missing after `sync-cursor` | Manually restore `{{ if eq .chezmoi.os ... }}` sections |
 | WSL: Windows Cursor has no settings | Run `chezmoi apply` in WSL; check `windowsAppDataRoaming` in `chezmoi.toml` |
-| WSL: extensions not installed | Verify Windows `cursor.cmd` path; set `windowsCursorCli` in `chezmoi.toml` |
+| WSL: extensions missing on Windows | Verify Windows `cursor.cmd` path; set `windowsCursorCli` in `chezmoi.toml` |
+| WSL: extensions missing in WSL only | Ensure `cursor` is on PATH (open a WSL folder in Cursor once); run `chezmoi apply --verbose` |
 | Secret scan error on `chezmoi add` | Use `--secrets ignore` flag |
 
 ---

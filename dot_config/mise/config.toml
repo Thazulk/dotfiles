@@ -10,13 +10,13 @@ lsd = "latest"
 bat = "latest"
 fzf = "latest"
 fd = "latest"
-# chezmoi = "latest"
 usage = "latest"
 tmux = "latest"
 github-cli = "latest"
 java = "temurin-17"
 zig = "latest"
 maven = "3.9"
+chezmoi = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]

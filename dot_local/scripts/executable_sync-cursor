@@ -103,15 +103,30 @@ fi
 
 echo "==> Updating extension list"
 mkdir -p "$SOURCE_DIR/dot_local/share/cursor"
-if is_wsl && cursor_cli=$(windows_cursor_cli); then
-    "$cursor_cli" --list-extensions > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
+ext_tmp=$(mktemp)
+ext_sources=0
+if is_wsl; then
+    if cursor_cli=$(windows_cursor_cli); then
+        "$cursor_cli" --list-extensions >> "$ext_tmp" 2>/dev/null || true
+        ext_sources=1
+    fi
+    if command -v cursor >/dev/null 2>&1; then
+        cursor --list-extensions >> "$ext_tmp" 2>/dev/null || true
+        ext_sources=1
+    fi
 elif command -v cursor >/dev/null 2>&1; then
-    cursor --list-extensions > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
+    cursor --list-extensions >> "$ext_tmp" 2>/dev/null || true
+    ext_sources=1
 elif command -v cursor.cmd >/dev/null 2>&1; then
-    cursor.cmd --list-extensions > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
+    cursor.cmd --list-extensions >> "$ext_tmp" 2>/dev/null || true
+    ext_sources=1
+fi
+if [[ "$ext_sources" -eq 1 ]]; then
+    grep -v '^[[:space:]]*$' "$ext_tmp" | sort -u > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
 else
     echo "Warning: cursor CLI not found, skipping extensions.txt update" >&2
 fi
+rm -f "$ext_tmp"
 
 echo "==> Re-adding Cursor skills"
 [[ -d "$HOME/.cursor/skills" ]] && chezmoi re-add --recursive --secrets ignore "$HOME/.cursor/skills"
@@ -121,7 +136,7 @@ echo "==> Re-adding Cursor skills"
 echo "==> Done. Review changes with: chezmoi git diff"
 echo "    Then commit: cd $SOURCE_DIR && git add -A && git commit -m 'sync cursor settings'"
 if is_wsl; then
-    echo "    WSL: run 'chezmoi apply' to push settings/extensions to Windows Cursor"
+    echo "    WSL: run 'chezmoi apply' to push settings/extensions to Windows and WSL Cursor"
 else
     echo "    On other machines: chezmoi update"
 fi

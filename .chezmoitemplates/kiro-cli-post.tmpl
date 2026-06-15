@@ -1,0 +1,7 @@
+{{- $rcfile := .rcfile -}}
+{{- $ext := .ext -}}
+
+# Kiro CLI post block. Keep at the bottom of this file.
+[[ -f "${HOME}/Library/Application Support/kiro-cli/shell/{{ $rcfile }}.post.{{ $ext }}" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/{{ $rcfile }}.post.{{ $ext }}"
+[[ -f "${HOME}/AppData/Local/kiro-cli/shell/{{ $rcfile }}.post.{{ $ext }}" ]] && builtin source "${HOME}/AppData/Local/kiro-cli/shell/{{ $rcfile }}.post.{{ $ext }}"
+[[ -f "${HOME}/.local/share/kiro-cli/shell/{{ $rcfile }}.post.{{ $ext }}" ]] && builtin source "${HOME}/.local/share/kiro-cli/shell/{{ $rcfile }}.post.{{ $ext }}"

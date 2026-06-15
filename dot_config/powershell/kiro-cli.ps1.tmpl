@@ -1,0 +1,44 @@
+# Kiro CLI — shared PowerShell setup (sourced from $PROFILE)
+# Autocomplete dropdown requires kiro-cli shell/*.ps1 hooks when the CLI provides them.
+
+$KiroCliDir = Join-Path $env:LOCALAPPDATA "kiro-cli"
+if (Test-Path -LiteralPath $KiroCliDir) {
+    $env:PATH = "$KiroCliDir;$env:PATH"
+}
+
+function Import-KiroCliShellHook {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string]$HookPath
+    )
+
+    if (Test-Path -LiteralPath $HookPath) {
+        . $HookPath
+    }
+}
+
+$KiroShellDir = Join-Path $KiroCliDir "shell"
+Import-KiroCliShellHook (Join-Path $KiroShellDir "profile.pre.ps1")
+Import-KiroCliShellHook (Join-Path $KiroShellDir "profile.post.ps1")
+Import-KiroCliShellHook (Join-Path $KiroShellDir "Microsoft.PowerShell_profile.pre.ps1")
+Import-KiroCliShellHook (Join-Path $KiroShellDir "Microsoft.PowerShell_profile.post.ps1")
+
+# kiro-cli init output (when the installed CLI exposes it)
+if (Get-Command kiro-cli -ErrorAction SilentlyContinue) {
+    try {
+        $preInit = kiro-cli init pwsh pre --rcfile profile 2>$null
+        if ($LASTEXITCODE -eq 0 -and $preInit) {
+            Invoke-Expression $preInit
+        }
+    } catch {
+        # Older Windows builds omit init/integrations; WSL zsh/bash carry autocomplete instead.
+    }
+
+    try {
+        $postInit = kiro-cli init pwsh post --rcfile profile 2>$null
+        if ($LASTEXITCODE -eq 0 -and $postInit) {
+            Invoke-Expression $postInit
+        }
+    } catch {
+    }
+}

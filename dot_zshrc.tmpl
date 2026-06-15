@@ -1,8 +1,4 @@
-# OS-specific initialization
-{{ if eq .chezmoi.os "darwin" }}
-# Amazon Q pre block. Keep at the top of this file.
-[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.pre.zsh"
-{{ end }}
+{{ template "kiro-cli-pre.tmpl" dict "rcfile" "zshrc" "ext" "zsh" }}
 
 HISTFILE=~/.zsh_history
 HISTSIZE=100000
@@ -75,7 +71,7 @@ set -o vi
 
 export VISUAL='nvim'
 export EDITOR='nvim'
-export TERM="tmux-256color"
+[[ -n "$TMUX" ]] && export TERM="tmux-256color"
 
 export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
@@ -174,8 +170,6 @@ alias tks="tmux kill-server"
 {{ if eq .chezmoi.os "darwin" }}
 eval "$(/Users/szedmakpeter/.local/bin/mise activate zsh)"
 
-# Amazon Q post block. Keep at the bottom of this file.
-[[ -f "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh" ]] && builtin source "${HOME}/Library/Application Support/amazon-q/shell/zshrc.post.zsh"
 {{ else if eq .chezmoi.os "linux" }}
 eval "$(/home/thazulk/.local/bin/mise activate zsh)"
 
@@ -184,3 +178,5 @@ compdef __start_kubectl k
 {{ end }}
 
 eval "$(mise activate zsh)"
+
+{{ template "kiro-cli-post.tmpl" dict "rcfile" "zshrc" "ext" "zsh" }}

@@ -58,11 +58,23 @@ elif command -v cursor.cmd >/dev/null 2>&1; then
 fi
 {{ else -}}
 if is_wsl; then
+    installed=0
     if cursor_cli=$(windows_cursor_cli); then
         echo "WSL: installing extensions via Windows Cursor: $cursor_cli"
         install_extensions "$cursor_cli"
+        installed=1
     else
-        echo "WSL: Windows Cursor CLI not found; extensions not installed" >&2
+        echo "WSL: Windows Cursor CLI not found; skipping Windows extensions" >&2
+    fi
+    if command -v cursor >/dev/null 2>&1; then
+        echo "WSL: installing extensions via Linux Cursor (WSL)"
+        install_extensions cursor
+        installed=1
+    else
+        echo "WSL: Linux Cursor CLI not found; skipping WSL extensions" >&2
+    fi
+    if [[ "$installed" -eq 0 ]]; then
+        echo "WSL: no Cursor CLI found; extensions not installed" >&2
         exit 1
     fi
 elif command -v cursor >/dev/null 2>&1; then
