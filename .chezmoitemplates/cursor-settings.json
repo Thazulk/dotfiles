@@ -1,0 +1,281 @@
+{
+    {{ if eq .chezmoi.os "windows" -}}
+    "terminal.external.windowsExec": "C:\\Program Files\\Git\\bin\\sh.exe",
+    "eslint.nodePath": "C:/Users/thazu/AppData/Local/Packages/CanonicalGroupLimited.UbuntuonWindows_79rhkp1fndgsc/LocalState/rootfs/home/szedmakp/.npm-global/lib/node_modules",
+    {{ end -}}
+    // "editor.fontFamily": "JetbrainsMono Nerd Font",
+    "editor.fontLigatures": true,
+    "editor.formatOnSave": true,
+    "editor.codeActionsOnSave": {
+        "source.fixAll.eslint": "explicit"
+    },
+    "eslint.format.enable": false,
+    "eslint.run": "onSave",
+    "redhat.telemetry.enabled": false,
+    "editor.renderWhitespace": "none",
+    "git.confirmSync": false,
+    "emmet.triggerExpansionOnTab": false,
+    "emmet.showAbbreviationSuggestions": true,
+    "editor.inlineSuggest.enabled": true,
+    "github.copilot.enable": {
+        "*": true,
+        "plaintext": false,
+        "markdown": false,
+        "scminput": false
+    },
+    "editor.unicodeHighlight.invisibleCharacters": false,
+    "editor.unicodeHighlight.ambiguousCharacters": false,
+    "go.toolsManagement.autoUpdate": true,
+    "editor.suggest.insertMode": "replace",
+    "editor.linkedEditing": true,
+    "launch": {},
+    "[json]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "zenMode.hideLineNumbers": false,
+    "vim.leader": "<Space>",
+    "vim.hlsearch": true,
+    "vim.highlightedyank.enable": true,
+    "vim.normalModeKeyBindingsNonRecursive": [
+        {
+            "before": ["u"],
+            "after": [],
+            "commands": [{"command": "undo", "args": []}]
+        },
+        {
+            "before": ["<C-r>"],
+            "after": [],
+            "commands": [{"command": "redo", "args": []}]
+        },
+        {
+            "before": ["<C-p>"],
+            "commands": ["workbench.action.quickOpen"]
+        },
+        {
+            "before": ["<S-h>"],
+            "commands": [":bprevious"]
+        },
+        {
+            "before": ["<S-l>"],
+            "commands": [":bnext"]
+        },
+        {
+            "before": ["leader", "v"],
+            "commands": [":vsplit"]
+        },
+        {
+            "before": ["leader", "s"],
+            "commands": [":split"]
+        },
+        {
+            "before": ["leader", "h"],
+            "commands": ["workbench.action.focusLeftGroup"]
+        },
+        {
+            "before": ["leader", "j"],
+            "commands": ["workbench.action.focusBelowGroup"]
+        },
+        {
+            "before": ["leader", "k"],
+            "commands": ["workbench.action.focusAboveGroup"]
+        },
+        {
+            "before": ["leader", "l"],
+            "commands": ["workbench.action.focusRightGroup"]
+        },
+        {
+            "before": ["leader", "w"],
+            "commands": [":w!"]
+        },
+        {
+            "before": ["leader", "w", "a"],
+            "commands": [":wa!"]
+        },
+        {
+            "before": ["leader", "q"],
+            "commands": [":q!"]
+        },
+        {
+            "before": ["leader", "x"],
+            "commands": [":x!"]
+        },
+        {
+            "before": ["[", "d"],
+            "commands": ["editor.action.marker.prev"]
+        },
+        {
+            "before": ["]", "d"],
+            "commands": ["editor.action.marker.next"]
+        },
+        {
+            "before": ["<leader>", "c", "a"],
+            "commands": ["editor.action.quickFix"]
+        },
+        {
+            "before": ["leader", "f"],
+            "commands": ["workbench.action.quickOpen"]
+        },
+        {
+            "before": ["leader", "p"],
+            "commands": ["editor.action.formatDocument"]
+        },
+        {
+            "before": ["<S-k>"],
+            "commands": ["editor.action.showDefinitionPreviewHover"]
+        },
+        {
+            "before": ["g", "y"],
+            "commands": ["editor.action.goToTypeDefinition"]
+        },
+        {
+            "before": ["g", "d"],
+            "commands": ["editor.action.goToDeclaration"]
+        },
+        {
+            "before": ["g", "r"],
+            "commands": ["editor.action.goToReferences"]
+        },
+        {
+            "before": ["leader", "c", "r"],
+            "commands": ["editor.action.rename"]
+        }
+    ],
+    "vim.visualModeKeyBindings": [
+        {
+            "before": ["<"],
+            "commands": ["editor.action.outdentLines"]
+        },
+        {
+            "before": [">"],
+            "commands": ["editor.action.indentLines"]
+        },
+        {
+            "before": ["J"],
+            "commands": ["editor.action.moveLinesDownAction"]
+        },
+        {
+            "before": ["K"],
+            "commands": ["editor.action.moveLinesUpAction"]
+        },
+        {
+            "before": ["leader", "c"],
+            "commands": ["editor.action.commentLine"]
+        }
+    ],
+    "editor.mouseWheelZoom": true,
+    "editor.guides.bracketPairsHorizontal": true,
+    {{ if eq .chezmoi.os "linux" -}}
+    "vs-kubernetes": {
+        "vscode-kubernetes.helm-path-linux": "/home/thazulk/.local/state/vs-kubernetes/tools/helm/linux-amd64/helm",
+        "vscode-kubernetes.kubectl-path-linux": "/home/thazulk/.local/state/vs-kubernetes/tools/kubectl/kubectl",
+        "vscode-kubernetes.minikube-path-linux": "/home/thazulk/.local/state/vs-kubernetes/tools/minikube/linux-amd64/minikube"
+    },
+    {{ end -}}
+    "workbench.iconTheme": "vscode-icons",
+    "vim.easymotion": true,
+    "vim.enableNeovim": true,
+    "vim.neovimUseConfigFile": true,
+    "vim.useSystemClipboard": true,
+    "Lua.diagnostics.globals": ["vim"],
+    "files.watcherExclude": {
+        "**/.bloop": true,
+        "**/.metals": true,
+        "**/.ammonite": true
+    },
+    "[vue]": {
+        "editor.defaultFormatter": "rvest.vs-code-prettier-eslint"
+    },
+    "vsicons.dontShowNewVersionMessage": true,
+    "cmake.showOptionsMovedNotification": false,
+    "git.autofetch": true,
+    "vue.server.hybridMode": "typeScriptPluginOnly",
+    "window.customTitleBarVisibility": "auto",
+    "window.titleBarStyle": "custom",
+    "terminal.integrated.fontSize": 12,
+    "[markdown]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode"
+    },
+    "update.showReleaseNotes": false,
+    "remote.defaultExtensionsIfInstalledLocally": [
+        "GitHub.copilot",
+        "GitHub.copilot-chat",
+        "GitHub.vscode-pull-request-github"
+    ],
+    "remote.autoForwardPortsSource": "hybrid",
+    "playwright.reuseBrowser": false,
+    {{ if eq .chezmoi.os "darwin" -}}
+    "yaml.schemas": {
+        "file:///Users/szedmakpeter/.vscode/extensions/atlassian.atlascode-4.0.8/resources/schemas/pipelines-schema.json": "bitbucket-pipelines.yml"
+    },
+    "terminal.integrated.env.osx": {
+        "Q_NEW_SESSION": "1"
+    },
+    {{ end -}}
+    "github.copilot.nextEditSuggestions.enabled": true,
+    "eslint.validate": [
+        "javascript",
+        "javascriptreact",
+        "typescript",
+        "typescriptreact"
+    ],
+    "eslint.enable": true,
+    "[typescript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    "[javascript]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    "[javascriptreact]": {
+        "editor.defaultFormatter": "esbenp.prettier-vscode",
+        "editor.codeActionsOnSave": {
+            "source.fixAll.eslint": "explicit",
+            "source.organizeImports": "explicit"
+        }
+    },
+    "[jsonc]": {
+        "editor.defaultFormatter": "vscode.json-language-features"
+    },
+    "typescript.updateImportsOnFileMove.enabled": "always",
+    "javascript.updateImportsOnFileMove.enabled": "always",
+    "[dockercompose]": {
+        "editor.insertSpaces": true,
+        "editor.tabSize": 2,
+        "editor.autoIndent": "advanced",
+        "editor.quickSuggestions": {
+            "other": true,
+            "comments": false,
+            "strings": true
+        },
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "[github-actions-workflow]": {
+        "editor.defaultFormatter": "redhat.vscode-yaml"
+    },
+    "gitlens.ai.model": "vscode",
+    "gitlens.ai.vscode.model": "copilot:gpt-4.1",
+    "editor.accessibilitySupport": "off",
+    "workbench.activityBar.orientation": "vertical",
+    "cursor.cpp.disabledLanguages": [
+        "plaintext",
+        "markdown",
+        "scminput",
+        "zig",
+        "rust"
+    ],
+    "editor.minimap.enabled": true,
+    "docker.extension.enableComposeLanguageServer": false,
+    "cursor.composer.usageSummaryDisplay": "always",
+    "update.releaseTrack": "prerelease",
+    "cursor.general.disableHttp2": true,
+    "window.autoDetectColorScheme": false,
+    "workbench.colorTheme": "Default Dark Modern",
+    "zig.zls.enabled": "on"
+}

@@ -1,0 +1,26 @@
+#!/bin/bash
+# chezmoi:template
+# extensions-sha256: {{ include "dot_local/share/cursor/extensions.txt" | sha256sum }}
+set -euo pipefail
+
+extensions_file="{{ .chezmoi.sourceDir }}/dot_local/share/cursor/extensions.txt"
+
+install_extensions() {
+    local cmd="$1"
+    while IFS= read -r ext || [[ -n "$ext" ]]; do
+        [[ -z "$ext" || "$ext" == \#* ]] && continue
+        "$cmd" --install-extension "$ext" --force 2>/dev/null || true
+    done < "$extensions_file"
+}
+
+{{ if eq .chezmoi.os "windows" -}}
+if command -v cursor >/dev/null 2>&1; then
+    install_extensions cursor
+elif command -v cursor.cmd >/dev/null 2>&1; then
+    install_extensions cursor.cmd
+fi
+{{ else -}}
+if command -v cursor >/dev/null 2>&1; then
+    install_extensions cursor
+fi
+{{ end -}}
