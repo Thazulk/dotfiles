@@ -1,0 +1,11 @@
+# Optional overrides for WSL → Windows Cursor sync.
+# Set these if auto-detection fails on your machine.
+
+[data]
+    windowsAppDataRoaming = ""
+    windowsCursorCli = ""
+
+# Example:
+# [data]
+#     windowsAppDataRoaming = "/mnt/c/Users/YourWindowsUser/AppData/Roaming"
+#     windowsCursorCli = "/mnt/c/Users/YourWindowsUser/AppData/Local/Programs/cursor/resources/app/bin/cursor.cmd"

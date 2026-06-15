@@ -5,7 +5,51 @@ set -euo pipefail
 
 SOURCE_DIR="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}"
 
+is_wsl() {
+    [[ -n "${WSL_DISTRO_NAME:-}" ]] || grep -qi microsoft /proc/version 2>/dev/null
+}
+
+windows_appdata_roaming() {
+    local win_path win_user
+    win_path=$(powershell.exe -NoProfile -Command '[Environment]::GetFolderPath("ApplicationData")' 2>/dev/null | tr -d '\r\n')
+    if [[ -n "$win_path" ]] && command -v wslpath >/dev/null 2>&1; then
+        wslpath -u "$win_path"
+        return 0
+    fi
+    win_user=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n')
+    if [[ -n "$win_user" && -d "/mnt/c/Users/${win_user}/AppData/Roaming" ]]; then
+        echo "/mnt/c/Users/${win_user}/AppData/Roaming"
+        return 0
+    fi
+    return 1
+}
+
+windows_cursor_cli() {
+    local win_user candidates c
+    win_user=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n')
+    candidates=(
+        "/mnt/c/Users/${win_user}/AppData/Local/Programs/cursor/resources/app/bin/cursor.cmd"
+        "/mnt/c/Users/${win_user}/AppData/Local/Programs/Cursor/resources/app/bin/cursor.cmd"
+        "/mnt/c/Program Files/Cursor/resources/app/bin/cursor.cmd"
+    )
+    for c in "${candidates[@]}"; do
+        [[ -f "$c" ]] && echo "$c" && return 0
+    done
+    command -v cursor.cmd >/dev/null 2>&1 && echo "cursor.cmd" && return 0
+    return 1
+}
+
 cursor_user_dir() {
+    if is_wsl; then
+        local roaming
+        roaming=$(windows_appdata_roaming) || {
+            echo "WSL: could not resolve Windows AppData. Is Windows Cursor installed?" >&2
+            return 1
+        }
+        echo "${roaming}/Cursor/User"
+        return 0
+    fi
+
     case "$(uname -s)" in
         Darwin)
             echo "$HOME/Library/Application Support/Cursor/User"
@@ -18,12 +62,12 @@ cursor_user_dir() {
             ;;
         *)
             echo "Unsupported OS for cursor_user_dir: $(uname -s)" >&2
-            exit 1
+            return 1
             ;;
     esac
 }
 
-USER_DIR="$(cursor_user_dir)"
+USER_DIR="$(cursor_user_dir)" || exit 1
 SETTINGS_TEMPLATE="$SOURCE_DIR/.chezmoitemplates/cursor-settings.json"
 KEYBINDINGS_TEMPLATE="$SOURCE_DIR/.chezmoitemplates/cursor-keybindings.json"
 
@@ -32,13 +76,15 @@ if [[ ! -d "$USER_DIR" ]]; then
     exit 1
 fi
 
+echo "==> Reading Cursor settings from: $USER_DIR"
+
 echo "==> Syncing settings to $SETTINGS_TEMPLATE"
 echo "    Note: OS-specific blocks in the template must be maintained manually."
 cp "$USER_DIR/settings.json" "$SETTINGS_TEMPLATE"
 
 echo "==> Syncing keybindings to $KEYBINDINGS_TEMPLATE"
 if [[ -f "$USER_DIR/keybindings.json" ]]; then
-    if grep -q '"cmd+i"' "$USER_DIR/keybindings.json" 2>/dev/null; then
+    if grep -qE '"cmd\+i"|"ctrl\+i"' "$USER_DIR/keybindings.json" 2>/dev/null; then
         cat > "$KEYBINDINGS_TEMPLATE" <<'EOF'
 // Place your key bindings in this file to override the defaults
 [
@@ -57,7 +103,9 @@ fi
 
 echo "==> Updating extension list"
 mkdir -p "$SOURCE_DIR/dot_local/share/cursor"
-if command -v cursor >/dev/null 2>&1; then
+if is_wsl && cursor_cli=$(windows_cursor_cli); then
+    "$cursor_cli" --list-extensions > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
+elif command -v cursor >/dev/null 2>&1; then
     cursor --list-extensions > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
 elif command -v cursor.cmd >/dev/null 2>&1; then
     cursor.cmd --list-extensions > "$SOURCE_DIR/dot_local/share/cursor/extensions.txt"
@@ -72,4 +120,8 @@ echo "==> Re-adding Cursor skills"
 
 echo "==> Done. Review changes with: chezmoi git diff"
 echo "    Then commit: cd $SOURCE_DIR && git add -A && git commit -m 'sync cursor settings'"
-echo "    On other machines: chezmoi update"
+if is_wsl; then
+    echo "    WSL: run 'chezmoi apply' to push settings/extensions to Windows Cursor"
+else
+    echo "    On other machines: chezmoi update"
+fi

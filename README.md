@@ -102,7 +102,8 @@ Default: `~/.local/share/chezmoi`
 ├── dot_local/
 │   ├── scripts/                 # ~/.local/scripts
 │   └── share/cursor/extensions.txt
-└── run_onchange_after_install-cursor-extensions.sh.tmpl
+├── run_onchange_after_install-cursor-extensions.sh.tmpl
+└── run_onchange_after_sync-cursor-settings-to-windows.sh.tmpl  # WSL → Windows Cursor
 ```
 
 ---
@@ -199,6 +200,40 @@ What it does:
 [Machine B / other OS] chezmoi update
     → settings, keybindings, skills are applied
     → extensions install automatically (run_onchange)
+```
+
+### WSL + Windows Cursor (important)
+
+If you run **chezmoi inside WSL** but use the **native Windows Cursor app**, there are two separate config locations:
+
+| Where chezmoi runs | Where settings land on `apply` | Where Windows Cursor reads |
+|--------------------|--------------------------------|----------------------------|
+| WSL (Linux) | `~/.config/Cursor/User/` | `%APPDATA%\Cursor\User\` |
+
+Windows Cursor does **not** read the WSL Linux path. This repo handles that with two `run_onchange` scripts:
+
+1. **`run_onchange_after_sync-cursor-settings-to-windows.sh`** — detects WSL and copies `settings.json`, `keybindings.json`, and `snippets/` from `~/.config/Cursor/User/` to the Windows AppData path (`/mnt/c/Users/.../AppData/Roaming/Cursor/User/`).
+2. **`run_onchange_after_install-cursor-extensions.sh`** — on WSL, installs extensions via the **Windows** `cursor.cmd`, not the Linux CLI.
+
+After `chezmoi apply` in WSL, both scripts run automatically.
+
+**`sync-cursor` in WSL** reads from the **Windows** Cursor config path (not `~/.config/Cursor/User/`), so changes made in the Windows app are captured correctly.
+
+If auto-detection fails, set overrides in `~/.config/chezmoi/chezmoi.toml`:
+
+```toml
+[data]
+    windowsAppDataRoaming = "/mnt/c/Users/YourWindowsUser/AppData/Roaming"
+    windowsCursorCli = "/mnt/c/Users/YourWindowsUser/AppData/Local/Programs/cursor/resources/app/bin/cursor.cmd"
+```
+
+**WSL workflow:**
+
+```bash
+chezmoi update          # apply + sync to Windows Cursor + install extensions
+# or after editing settings in Windows Cursor:
+sync-cursor && git commit ... && git push
+chezmoi apply           # re-sync to Windows if needed
 ```
 
 ---
@@ -342,6 +377,13 @@ Hyprland machine configs:
 - Extension installer: `cursor.cmd` fallback
 - Most Linux desktop configs are irrelevant
 
+### WSL + Windows Cursor
+
+- Run `chezmoi apply` in WSL — settings are copied to Windows AppData automatically
+- `sync-cursor` reads from Windows Cursor paths when run in WSL
+- If paths differ (non-default Windows username), configure `windowsAppDataRoaming` in `chezmoi.toml`
+- Restart Windows Cursor after apply if settings don't appear immediately
+
 ---
 
 ## Adding new files to chezmoi
@@ -371,6 +413,8 @@ chezmoi add --secrets ignore ~/.cursor/skills
 | Template error | `chezmoi execute-template < file.tmpl` |
 | Diff between live and source | `chezmoi diff` — then `chezmoi apply` or `chezmoi re-add` |
 | OS blocks missing after `sync-cursor` | Manually restore `{{ if eq .chezmoi.os ... }}` sections |
+| WSL: Windows Cursor has no settings | Run `chezmoi apply` in WSL; check `windowsAppDataRoaming` in `chezmoi.toml` |
+| WSL: extensions not installed | Verify Windows `cursor.cmd` path; set `windowsCursorCli` in `chezmoi.toml` |
 | Secret scan error on `chezmoi add` | Use `--secrets ignore` flag |
 
 ---
