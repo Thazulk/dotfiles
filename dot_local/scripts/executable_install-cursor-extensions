@@ -1,13 +1,19 @@
-#!/bin/bash
-# chezmoi:template
-# extensions-sha256: {{ include "dot_local/share/cursor/extensions.txt" | sha256sum }}
+#!/usr/bin/env bash
+# Install Cursor extensions from extensions.txt (manual run; same logic as chezmoi run_onchange).
 set -euo pipefail
 
-extensions_file="{{ .chezmoi.sourceDir }}/dot_local/share/cursor/extensions.txt"
+extensions_file="${CHEZMOI_SOURCE_DIR:-$HOME/.local/share/chezmoi}/dot_local/share/cursor/extensions.txt"
+if [[ ! -f "$extensions_file" ]]; then
+    extensions_file="$HOME/.local/share/cursor/extensions.txt"
+fi
+if [[ ! -f "$extensions_file" ]]; then
+    echo "extensions list not found: $extensions_file" >&2
+    exit 1
+fi
 
 install_extensions() {
     local cmd=("$1")
-    echo "==> Installing Cursor extensions via ${cmd[*]}"
+    echo "==> Installing via ${cmd[*]}"
     while IFS= read -r ext || [[ -n "$ext" ]]; do
         [[ -z "$ext" || "$ext" == \#* ]] && continue
         "${cmd[@]}" --install-extension "$ext" --force 2>/dev/null || true
@@ -20,15 +26,6 @@ is_wsl() {
 
 windows_cursor_cli() {
     local win_user candidates c
-    {{ with index . "windowsCursorCli" -}}
-    {{ if . -}}
-    if [[ -x "{{ . }}" ]]; then
-        echo "{{ . }}"
-        return 0
-    fi
-    {{ end -}}
-    {{ end -}}
-
     win_user=$(cmd.exe /c "echo %USERNAME%" 2>/dev/null | tr -d '\r\n')
     candidates=(
         "/mnt/c/Users/${win_user}/AppData/Local/Programs/cursor/resources/app/bin/cursor.cmd"
@@ -41,12 +38,7 @@ windows_cursor_cli() {
             return 0
         fi
     done
-
-    if command -v cursor.cmd >/dev/null 2>&1; then
-        echo "cursor.cmd"
-        return 0
-    fi
-
+    command -v cursor.cmd >/dev/null 2>&1 && echo "cursor.cmd" && return 0
     return 1
 }
 
@@ -60,27 +52,31 @@ cursor_cli_available() {
 }
 
 if ! cursor_cli_available; then
-    echo "Cursor CLI not found on this machine; skipping extension install"
-    exit 0
+    echo "Cursor CLI not found; install Cursor or open a WSL folder in Cursor once" >&2
+    exit 1
 fi
 
-{{ if eq .chezmoi.os "windows" -}}
-if command -v cursor >/dev/null 2>&1; then
-    install_extensions cursor
-elif command -v cursor.cmd >/dev/null 2>&1; then
-    install_extensions cursor.cmd
-fi
-{{ else -}}
+installed=0
 if is_wsl; then
     if cursor_cli=$(windows_cursor_cli); then
-        echo "WSL: installing extensions via Windows Cursor: $cursor_cli"
         install_extensions "$cursor_cli"
+        installed=1
     fi
     if command -v cursor >/dev/null 2>&1; then
-        echo "WSL: installing extensions via Linux Cursor (WSL)"
         install_extensions cursor
+        installed=1
     fi
 elif command -v cursor >/dev/null 2>&1; then
     install_extensions cursor
+    installed=1
+elif command -v cursor.cmd >/dev/null 2>&1; then
+    install_extensions cursor.cmd
+    installed=1
 fi
-{{ end -}}
+
+if [[ "$installed" -eq 0 ]]; then
+    echo "Cursor CLI not found; cannot install extensions" >&2
+    exit 1
+fi
+
+echo "==> Done."
