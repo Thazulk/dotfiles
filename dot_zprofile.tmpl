@@ -1,3 +1,9 @@
-{{ template "kiro-cli-pre.tmpl" dict "rcfile" "zprofile" "ext" "zsh" }}
-
-{{ template "kiro-cli-post.tmpl" dict "rcfile" "zprofile" "ext" "zsh" }}
+{{- if eq .chezmoi.os "darwin" }}
+# Initialize Homebrew before .zshrc runs so its commands and Zsh completion
+# definitions are available when compinit builds the completion database.
+if [[ -x /opt/homebrew/bin/brew ]]; then
+  eval "$(/opt/homebrew/bin/brew shellenv)"
+elif [[ -x /usr/local/bin/brew ]]; then
+  eval "$(/usr/local/bin/brew shellenv)"
+fi
+{{- end }}

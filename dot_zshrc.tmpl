@@ -1,5 +1,3 @@
-{{ template "kiro-cli-pre.tmpl" dict "rcfile" "zshrc" "ext" "zsh" }}
-
 HISTFILE=~/.zsh_history
 HISTSIZE=100000
 SAVEHIST=100000
@@ -17,12 +15,22 @@ fpath+=($HOME/.zsh/pure)
 autoload -U promptinit; promptinit
 prompt pure
 
-{{ if eq .chezmoi.os "linux" }}
-#zsh completion
-fpath=($HOME/zsh-completions/src $fpath)
+# Completion definitions must be added to fpath before compinit.
+if command -v brew >/dev/null 2>&1; then
+  _brew_prefix="$(brew --prefix)"
+  fpath=("$_brew_prefix/share/zsh/site-functions" $fpath)
+  if [[ -d "$_brew_prefix/share/zsh-completions" ]]; then
+    fpath=("$_brew_prefix/share/zsh-completions" $fpath)
+  fi
+  unset _brew_prefix
+fi
+
+if [[ -d "$HOME/zsh-completions/src" ]]; then
+  fpath=("$HOME/zsh-completions/src" $fpath)
+fi
+
 autoload -Uz compinit
 compinit
-{{ end }}
 
 # Git aliases
 alias gst='git status'
@@ -167,16 +175,27 @@ export PATH="/home/thazulk/.rd/bin:$PATH"
 
 alias tks="tmux kill-server"
 
-{{ if eq .chezmoi.os "darwin" }}
-eval "$(/Users/szedmakpeter/.local/bin/mise activate zsh)"
-
-{{ else if eq .chezmoi.os "linux" }}
-eval "$(/home/thazulk/.local/bin/mise activate zsh)"
-
-source <(kubectl completion zsh)
-compdef __start_kubectl k
+{{ if eq .chezmoi.os "linux" }}
+if command -v kubectl >/dev/null 2>&1; then
+  source <(kubectl completion zsh)
+  compdef __start_kubectl k
+fi
 {{ end }}
 
-eval "$(mise activate zsh)"
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate zsh)"
+fi
 
-{{ template "kiro-cli-post.tmpl" dict "rcfile" "zshrc" "ext" "zsh" }}
+# Keep the native completion menu out of the way and expose descriptions as
+# groups in fzf-tab.
+zstyle ':completion:*:descriptions' format '[%d]'
+zstyle ':completion:*' menu no
+
+# fzf-tab must be the last plugin that binds Tab.
+if command -v brew >/dev/null 2>&1; then
+  _fzf_tab_root="$(brew --prefix fzf-tab 2>/dev/null)"
+  if [[ -r "$_fzf_tab_root/share/fzf-tab/fzf-tab.zsh" ]]; then
+    source "$_fzf_tab_root/share/fzf-tab/fzf-tab.zsh"
+  fi
+  unset _fzf_tab_root
+fi

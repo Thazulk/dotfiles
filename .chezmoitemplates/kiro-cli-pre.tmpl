@@ -1,6 +1,0 @@
-{{- $rcfile := .rcfile -}}
-{{- $ext := .ext -}}
-# Kiro CLI pre block. Keep at the top of this file.
-[[ -f "${HOME}/.local/share/kiro-cli/shell/{{ $rcfile }}.pre.{{ $ext }}" ]] && builtin source "${HOME}/.local/share/kiro-cli/shell/{{ $rcfile }}.pre.{{ $ext }}"
-[[ -f "${HOME}/Library/Application Support/kiro-cli/shell/{{ $rcfile }}.pre.{{ $ext }}" ]] && builtin source "${HOME}/Library/Application Support/kiro-cli/shell/{{ $rcfile }}.pre.{{ $ext }}"
-[[ -f "${HOME}/AppData/Local/kiro-cli/shell/{{ $rcfile }}.pre.{{ $ext }}" ]] && builtin source "${HOME}/AppData/Local/kiro-cli/shell/{{ $rcfile }}.pre.{{ $ext }}"

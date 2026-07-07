@@ -1,0 +1,4 @@
+interface:
+  display_name: "GPT Toolset"
+  short_description: "Set up and use a project AI-development toolset."
+  default_prompt: "Set up or assess the GPT development toolset for this project."
