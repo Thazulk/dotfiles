@@ -2,7 +2,7 @@
 go = "latest"
 node = "latest"
 npm = "latest"
-python = "latest"
+python = ["latest", "3.13"]
 rust = "latest"
 neovim = "nightly"
 ripgrep = "latest"
@@ -17,6 +17,7 @@ java = "temurin-17"
 zig = "latest"
 maven = "3.9"
 chezmoi = "latest"
+uv = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]
