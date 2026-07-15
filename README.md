@@ -109,6 +109,40 @@ If auto-detect fails:
     windowsCursorCli = "/mnt/c/Users/YOUR_USER/AppData/Local/Programs/cursor/resources/app/bin/cursor.cmd"
 ```
 
+### AI toolstack (manual once per machine)
+
+The portable definitions are in this repository: mise runtimes, the shared
+`~/.agents/skills/` directory (including Caveman), and the Codex
+`gpt-toolset` skill. Install the executable tools explicitly after applying
+dotfiles; this keeps `chezmoi apply` deterministic and avoids unexpected
+package downloads or assistant-config changes.
+
+```bash
+# macOS, Linux, or WSL
+bootstrap-ai-toolstack
+check-ai-toolstack
+
+# opt-in integrations that modify the local client/proxy setup
+TOOLSTACK_ENABLE_RTK=1 bootstrap-ai-toolstack
+TOOLSTACK_ENABLE_HEADROOM=1 bootstrap-ai-toolstack
+```
+
+On native Windows PowerShell:
+
+```powershell
+& "$HOME/.local/scripts/bootstrap-ai-toolstack.ps1"
+```
+
+The bootstrap adds missing Codex MCP servers using the commands found on that
+machine. It intentionally does not version `~/.codex/config.toml`: it can hold
+machine-specific paths and locally added servers. If an existing MCP command
+path changes, remove that one entry with `codex mcp remove NAME`, then rerun the
+bootstrap.
+
+`repowise init` and indexing remain project-level actions. Put project-specific
+instructions in that repository's `AGENTS.md`; do not add generated indexes,
+tokens, or API credentials to this dotfiles repository.
+
 ---
 
 ## Daily use
@@ -129,7 +163,6 @@ chezmoi re-add ~/.foo       # copy live file back into repo
 - **Hardcoded paths** in `.zshrc` (fnm, Rancher Desktop, mise) — adjust on a new username/machine or templatize later.
 - **Linux `.zshrc`** still references **fnm** alongside mise node; you can drop fnm if you only use mise.
 - **envman** (`~/.config/envman/load.sh`) — only if you use envman; safe to ignore if the file is missing.
-- **kiro-cli** shell hooks in `.zshrc` / `.bashrc` — need `kiro-cli` installed separately; autocomplete needs `kiro-cli-term` (fragile on WSL).
 - **Hyprland / Waybar / Mako** — Linux desktop only; harmless on other OSes.
 - **`sync-cursor`** overwrites `.chezmoitemplates/cursor-settings.json` with raw JSON — OS `{{ if }}` blocks in that template must be re-added by hand if you rely on them.
 

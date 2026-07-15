@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+# Read-only health check for the portable AI development toolstack.
+set -u
+
+check_command() {
+    local name="$1" path
+    path="$(command -v "$name" 2>/dev/null || true)"
+    if [[ -n "$path" ]]; then
+        printf 'ok      %-22s %s\n' "$name" "$path"
+    else
+        printf 'missing %-22s\n' "$name"
+    fi
+}
+
+check_file() {
+    local label="$1" path="$2"
+    if [[ -f "$path" ]]; then
+        printf 'ok      %-22s %s\n' "$label" "$path"
+    else
+        printf 'missing %-22s %s\n' "$label" "$path"
+    fi
+}
+
+printf '%s\n' '==> AI toolstack check'
+for command in mise uv node npm rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codex; do
+    check_command "$command"
+done
+
+check_file caveman-skill "$HOME/.agents/skills/caveman/SKILL.md"
+check_file gpt-toolset-skill "$HOME/.codex/skills/gpt-toolset/SKILL.md"
+
+if command -v codex >/dev/null 2>&1; then
+    printf '\n%s\n' '==> Codex MCP servers'
+    codex mcp list || true
+fi

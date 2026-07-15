@@ -1,5 +1,3 @@
-{{ template "kiro-cli-pre.tmpl" dict "rcfile" "bashrc" "ext" "bash" }}
-
 # ~/.bashrc
 
 # If not running interactively, don't do anything
@@ -20,5 +18,3 @@ if command -v mise >/dev/null 2>&1; then
     [[ -d "$GOPATH/bin" ]] && export PATH="$GOPATH/bin:$PATH"
   fi
 fi
-
-{{ template "kiro-cli-post.tmpl" dict "rcfile" "bashrc" "ext" "bash" }}
