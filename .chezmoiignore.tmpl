@@ -2,12 +2,7 @@
 Library/**
 {{ end }}
 
-{{ if ne .chezmoi.os "linux" }}
-.config/Cursor/**
-{{ end }}
-
 {{ if ne .chezmoi.os "windows" }}
-AppData/Roaming/Cursor/**
 Documents/**
 .config/powershell/**
 {{ end }}

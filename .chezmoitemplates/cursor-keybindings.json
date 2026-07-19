@@ -1,7 +1,0 @@
-// Place your key bindings in this file to override the defaults
-[
-    {
-        "key": {{ if eq .chezmoi.os "darwin" }}"cmd+i"{{ else }}"ctrl+i"{{ end }},
-        "command": "composerMode.agent"
-    }
-]
