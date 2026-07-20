@@ -22,14 +22,23 @@ check_file() {
 }
 
 printf '%s\n' '==> AI toolstack check'
-for command in mise uv node npm rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codex; do
+for command in mise uv node npm rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codex claude; do
     check_command "$command"
 done
 
 check_file caveman-skill "$HOME/.agents/skills/caveman/SKILL.md"
-check_file gpt-toolset-skill "$HOME/.codex/skills/gpt-toolset/SKILL.md"
+check_file gpt-toolset-skill-codex "$HOME/.codex/skills/gpt-toolset/SKILL.md"
+check_file gpt-toolset-skill-claude "$HOME/.claude/skills/gpt-toolset/SKILL.md"
 
 if command -v codex >/dev/null 2>&1; then
     printf '\n%s\n' '==> Codex MCP servers'
     codex mcp list || true
 fi
+
+if command -v claude >/dev/null 2>&1; then
+    printf '\n%s\n' '==> Claude Code MCP servers'
+    claude mcp list || true
+fi
+
+printf '\n%s\n' '==> Not installed by this toolstack (no bootstrap/init script in this repo)'
+printf '%s\n' 'FFF-MCP, Codeburn — mentioned in the reference guide only. Add a bootstrap step before relying on them for either client.'

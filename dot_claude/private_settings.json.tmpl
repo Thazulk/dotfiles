@@ -1,0 +1,81 @@
+{
+  "env": {
+    "ENABLE_TOOL_SEARCH": "true"
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Bash|PowerShell|Grep|Glob|Read|Edit|Write|mcp__.*[Rr]epowise.*__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repowise-augment",
+            "timeout": 10,
+            "statusMessage": "Checking codebase context..."
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repowise-augment",
+            "timeout": 10,
+            "statusMessage": "Loading repowise context..."
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "rtk hook claude"
+          }
+        ]
+      }
+    ]
+  },
+  "enabledPlugins": {
+    "caveman@caveman": true
+  },
+  "extraKnownMarketplaces": {
+    "caveman": {
+      "source": {
+        "source": "github",
+        "repo": "JuliusBrussee/caveman"
+      }
+    }
+  },
+  "theme": "dark",
+  "mcpServers": {
+    "codegraph": {
+      "command": "{{ .chezmoi.homeDir }}/.local/share/mise/installs/node/latest/bin/codegraph",
+      "args": ["serve"]
+    },
+    "ddgs": {
+      "command": "{{ .chezmoi.homeDir }}/.local/bin/ddgs",
+      "args": ["mcp"]
+    },
+    "repowise": {
+      "command": "{{ .chezmoi.homeDir }}/.local/share/uv/tools/repowise/bin/repowise",
+      "args": ["mcp"],
+      "description": "repowise: codebase intelligence — docs, graph, git signals, dead code, decisions"
+    },
+    "context7": {
+      "command": "{{ .chezmoi.homeDir }}/.local/share/mise/installs/node/latest/bin/context7-mcp",
+      "args": [],
+      "description": "context7: current, library-specific technical documentation"
+    },
+    "codebase-memory": {
+      "command": "{{ .chezmoi.homeDir }}/.local/share/mise/installs/node/latest/bin/codebase-memory-mcp",
+      "args": [],
+      "description": "codebase-memory: persistent codebase knowledge graph and structural search"
+    }
+  }
+}
