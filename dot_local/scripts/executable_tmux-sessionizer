@@ -1,39 +1,10 @@
 #!/usr/bin/env zsh
 
-setopt EXTENDED_GLOB
-setopt NULL_GLOB
-
 if [[ $# -eq 1 ]]; then
     selected=$1
 else
-    config_file="$HOME/.local/scripts/sessionizer-paths.conf"
-    if [[ ! -f "$config_file" ]]; then
-        echo "Config file not found at $config_file"
-        exit 1
-    fi
-
-    base_dirs=()
-    while IFS= read -r dir || [[ -n "$dir" ]]; do
-        [[ -z "$dir" || "$dir" =~ ^[[:space:]]*# ]] && continue
-        
-        expanded_dir=${dir/#\~/$HOME}
-        base_dirs+=("$expanded_dir")
-    done < "$config_file"
-
-    all_dirs=()
-    for dir in "${base_dirs[@]}"; do
-        [[ -d "$dir" ]] && all_dirs+=("$dir")
-        
-        for subdir in "$dir"/*(ND/); do
-            [[ -d "$subdir" ]] && all_dirs+=("$subdir")
-        done
-    done
-
-    selected=$(printf '%s\n' "${all_dirs[@]}" | sort -u | fzf)
+    selected=$("$HOME/.local/scripts/fzf-dir")
 fi
-
-unsetopt EXTENDED_GLOB
-unsetopt NULL_GLOB
 
 [[ -z "$selected" ]] && exit 0
 

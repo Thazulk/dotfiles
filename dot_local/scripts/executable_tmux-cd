@@ -1,0 +1,8 @@
+#!/usr/bin/env zsh
+
+target=$1
+selected=$("$HOME/.local/scripts/fzf-dir") || exit 0
+
+[[ -z "$selected" ]] && exit 0
+
+tmux send-keys ${target:+-t "$target"} "cd ${(q)selected}" C-m

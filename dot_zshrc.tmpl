@@ -126,15 +126,24 @@ else
     done
   fi
 fi
-# bindkey -s '^f' 'nvim $(fzf)^M'
-# open tmux sessionizer with ctrl+f
-bindkey -s ^f "tmux-sessionizer\n"
-# open vscode with alt+f
-bindkey -s "^[f" "vscode-sessionizer\n"
-
 [ -f ~/.fzf.zsh ] && source ~/.fzf.zsh
 # Enable vi mode
 bindkey -v
+
+# bindkey -s '^f' 'nvim $(fzf)^M'
+fzf-cd-widget() {
+  local selected
+  selected="$("$HOME/.local/scripts/fzf-dir")" || return
+  [[ -n "$selected" ]] && cd -- "$selected"
+  zle reset-prompt
+}
+zle -N fzf-cd-widget
+# change directory with ctrl+f
+bindkey -M viins ^f fzf-cd-widget
+# open tmux sessionizer with ctrl+t
+bindkey -M viins -s ^t "tmux-sessionizer\n"
+# open vscode with alt+f
+bindkey -M viins -s "^[f" "vscode-sessionizer\n"
 
 {{ if eq .chezmoi.os "linux" }}
 # export PYENV_ROOT="$HOME/.pyenv"
