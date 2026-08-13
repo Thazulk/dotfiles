@@ -204,6 +204,11 @@ zstyle ':completion:*:descriptions' format '[%d]'
 zstyle ':completion:*' menu no
 
 # fzf-tab must be the last plugin that binds Tab.
+{{ if eq .chezmoi.os "linux" }}
+if [[ -r /usr/share/zsh/plugins/fzf-tab/fzf-tab.plugin.zsh ]]; then
+  source /usr/share/zsh/plugins/fzf-tab/fzf-tab.plugin.zsh
+fi
+{{ else }}
 if command -v brew >/dev/null 2>&1; then
   _fzf_tab_root="$(brew --prefix fzf-tab 2>/dev/null)"
   if [[ -r "$_fzf_tab_root/share/fzf-tab/fzf-tab.zsh" ]]; then
@@ -211,3 +216,4 @@ if command -v brew >/dev/null 2>&1; then
   fi
   unset _fzf_tab_root
 fi
+{{ end }}
