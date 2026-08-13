@@ -3,3 +3,4 @@
 -- Add any additional options here
 
 vim.g.snacks_animate = false
+vim.env.LG_CONFIG_FILE = vim.fn.stdpath("config") .. "/lazygit.yml"

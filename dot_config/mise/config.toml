@@ -19,6 +19,9 @@ maven = "3.9"
 chezmoi = "latest"
 uv = "latest"
 "npm:@nestjs/cli" = "latest"
+herdr = "latest"
+lazygit = "latest"
+delta = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]

@@ -54,6 +54,7 @@ alias gpop='git stash pop'
 
 # finds all files recursively and sorts by last modification, ignore hidden files
 alias lastmod='find . -type f -not -path "*/\.*" -exec ls -lrt {} +'
+alias reload='source ~/.zshrc'
 
 {{ if eq .chezmoi.os "linux" }}
 # yay
@@ -142,6 +143,8 @@ zle -N fzf-cd-widget
 bindkey -M viins ^f fzf-cd-widget
 # open tmux sessionizer with ctrl+t
 bindkey -M viins -s ^t "tmux-sessionizer\n"
+# open herdr sessionizer with ctrl+h
+bindkey -M viins -s ^h "herdr-sessionizer\n"
 # open vscode with alt+f
 bindkey -M viins -s "^[f" "vscode-sessionizer\n"
 

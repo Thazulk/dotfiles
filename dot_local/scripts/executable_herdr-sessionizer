@@ -1,0 +1,25 @@
+#!/usr/bin/env zsh
+
+selected=${1:-$("$HOME/.local/scripts/fzf-dir")}
+[[ -z "$selected" ]] && exit 0
+
+session_name=$(basename "$selected" | tr . _)
+cd -- "$selected" || exit 1
+selected=$PWD
+herdr_bin=${HERDR_BIN_PATH:-herdr}
+
+if [[ ${HERDR_ENV:-} == 1 || -n ${HERDR_SOCKET_PATH:-} ]]; then
+    workspace_id=$(
+        "$herdr_bin" workspace list |
+            jq -r --arg label "$session_name" \
+                '[.result.workspaces[] | select(.label == $label)][0].workspace_id // empty'
+    ) || exit 1
+
+    if [[ -n "$workspace_id" ]]; then
+        exec "$herdr_bin" workspace focus "$workspace_id" >/dev/null
+    fi
+
+    exec "$herdr_bin" workspace create --cwd "$selected" --label "$session_name" --focus >/dev/null
+fi
+
+exec "$herdr_bin" --session "$session_name"
