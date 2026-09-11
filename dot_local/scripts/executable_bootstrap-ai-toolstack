@@ -2,7 +2,7 @@
 # Install the portable AI development toolstack on macOS, Linux, or WSL.
 # This is deliberately manual: `chezmoi apply` should not download packages
 # or rewrite assistant configuration without an explicit user action.
-set -u
+set -euo pipefail
 
 # uv's default tool directory on macOS/Linux/WSL. This makes tools installed
 # earlier in this same run available for the Codex MCP configuration below.
@@ -17,86 +17,61 @@ run() {
         return 0
     fi
     say "WARNING: failed: $*" >&2
-    return 0
+    return 1
 }
 
-install_uv_tool() {
-    local package="$1" command="$2"
-    if have "$command"; then
-        say "ok: $command"
-    elif have uv; then
-        run uv tool install "$package"
-    else
-        say "skip: $package (uv is not installed)" >&2
+add_mcp() {
+    local name="$1" command="$2"
+    shift 2
+    if have codex; then
+        # Refresh only this known local server when its executable moved.
+        if codex mcp get "$name" --json >"$mcp_tmp" 2>/dev/null; then
+            if python3 -c 'import json,sys; d=json.load(open(sys.argv[1]))["transport"]; sys.exit(d.get("command") != sys.argv[2] or d.get("args",[]) != sys.argv[3:])' "$mcp_tmp" "$command" "$@"; then
+                say "ok: Codex MCP $name"
+            else
+                run codex mcp remove "$name"
+                run codex mcp add "$name" -- "$command" "$@"
+            fi
+        else
+            run codex mcp add "$name" -- "$command" "$@"
+        fi
+    fi
+    if have claude; then
+        # User scope is global; never persist the auth-bearing ~/.claude.json.
+        if python3 -c 'import json,pathlib,sys; p=pathlib.Path.home()/".claude.json"; d=json.loads(p.read_text()).get("mcpServers",{}).get(sys.argv[1],{}) if p.exists() else {}; sys.exit(d.get("command") != sys.argv[2] or d.get("args",[]) != sys.argv[3:])' "$name" "$command" "$@"; then
+            say "ok: Claude MCP $name"
+        else
+            claude mcp remove --scope user "$name" 2>/dev/null || true
+            run claude mcp add --scope user "$name" -- "$command" "$@"
+        fi
     fi
 }
 
-codex_mcp_has() {
-    codex mcp list 2>/dev/null | awk 'NR > 1 { print $1 }' | grep -Fxq "$1"
-}
-
-add_codex_mcp() {
-    local name="$1"
-    shift
-    if codex_mcp_has "$name"; then
-        say "ok: Codex MCP $name"
-    else
-        run codex mcp add "$name" -- "$@"
-    fi
-}
+mcp_tmp="$(mktemp)"
+trap 'rm -f "$mcp_tmp"' EXIT
 
 say "==> AI toolstack bootstrap"
 
-if have mise; then
+if [[ "${TOOLSTACK_SKIP_MISE:-0}" == "1" ]]; then
+    say "skip: mise install (TOOLSTACK_SKIP_MISE=1)"
+elif have mise; then
     run mise install
 else
     say "skip: mise is not installed; install it first, then rerun this script" >&2
 fi
 
-if ! have rtk; then
-    if have brew; then
-        run brew install rtk
-    else
-        say "skip: RTK needs a package-manager install on this platform" >&2
-    fi
-fi
-
-if have npm; then
-    run npm install -g --allow-scripts=@suatkocar/codegraph,codebase-memory-mcp \
-        @upstash/context7-mcp codebase-memory-mcp @suatkocar/codegraph
-else
-    say "skip: npm is not installed" >&2
-fi
-
-install_uv_tool ddgs ddgs
-install_uv_tool 'headroom-ai[all]' headroom
-
-if have repowise; then
-    say "ok: repowise"
-elif have uv; then
-    # Repowise currently needs Python 3.13 rather than the latest Python.
-    python313=""
-    if have mise; then
-        python313="$(mise exec python@3.13 -- which python3 2>/dev/null || true)"
-    fi
-    if [[ -n "$python313" ]]; then
-        run uv tool install --python "$python313" repowise
-    else
-        say "skip: repowise needs mise Python 3.13; run 'mise install' first" >&2
-    fi
-else
-    say "skip: repowise (uv is not installed)" >&2
-fi
+# Refresh PATH after mise install; registration uses mise-managed commands.
+eval "$(mise env --shell bash)"
+export PATH="$HOME/.local/bin:$PATH"
 
 if have codex; then
-    have context7-mcp && add_codex_mcp context7 "$(command -v context7-mcp)"
-    have codebase-memory-mcp && add_codex_mcp codebase-memory "$(command -v codebase-memory-mcp)"
-    have codegraph && add_codex_mcp codegraph "$(command -v codegraph)" serve
-    have ddgs && add_codex_mcp ddgs "$(command -v ddgs)" mcp
-    have repowise && add_codex_mcp repowise "$(command -v repowise)" mcp
-else
-    say "skip: Codex MCP configuration (codex is not installed)" >&2
+    run python3 "$(dirname "$0")/configure-agent-defaults"
 fi
+have context7-mcp && add_mcp context7 "$(mise which context7-mcp --tool npm:@upstash/context7-mcp)"
+have codebase-memory-mcp && add_mcp codebase-memory "$(mise which codebase-memory-mcp --tool npm:codebase-memory-mcp)"
+have codegraph && add_mcp codegraph "$(command -v codegraph)" serve
+have ddgs && add_mcp ddgs "$(mise which ddgs --tool pipx:ddgs)" mcp
+have repowise && add_mcp repowise "$(mise which repowise --tool pipx:repowise)" mcp
 
 if [[ "${TOOLSTACK_ENABLE_RTK:-0}" == "1" ]] && have rtk; then
     run rtk init --global --codex

@@ -1,0 +1,105 @@
+#!/usr/bin/env python3
+"""Free, deterministic freshness check for ~/.claude/MODEL-MATRIX.md.
+
+No network, no model tokens. Prints NO CHANGES (exit 0) or a delta list
+(exit 1) so the weekly review only spends tokens when something moved.
+"""
+import json, os, re, subprocess, sys, datetime
+
+HOME = os.path.expanduser("~")
+MATRIX = f"{HOME}/.claude/MODEL-MATRIX.md"
+MAX_AGE_DAYS = 30
+deltas, checked = [], []
+
+
+def matrix_text():
+    try:
+        return open(MATRIX).read()
+    except OSError:
+        deltas.append(f"MISSING: {MATRIX} does not exist")
+        return ""
+
+
+M = matrix_text()
+
+
+def codex_models():
+    try:
+        raw = open(f"{HOME}/.codex/models_cache.json").read()
+    except OSError:
+        return deltas.append("codex: models_cache.json unreadable")
+    have = set(re.findall(r"gpt-(?:5\.[0-9]+|6-astra)(?:-[a-z]+)?", raw))
+    checked.append(f"codex models: {len(have)} found")
+    for m in sorted(have):
+        if m not in M and not m.startswith("gpt-5.6"):
+            deltas.append(f"codex: NEW model `{m}` not in matrix -- evaluate reliability before adopting")
+    for pinned in ("gpt-5.5", "gpt-6-astra"):
+        if pinned not in have:
+            deltas.append(f"codex: matrix relies on `{pinned}` but the account no longer offers it")
+    cfg = open(f"{HOME}/.codex/config.toml").read()
+    if re.search(r'^model\s*=\s*"gpt-5\.6', cfg, re.M):
+        deltas.append("codex: config.toml default is a gpt-5.6-* model (documented regression) -- repin gpt-5.5")
+
+
+def gemini_models():
+    try:
+        out = subprocess.run(["agy", "models"], capture_output=True, text=True, timeout=60).stdout
+    except Exception as e:
+        return deltas.append(f"gemini: could not inspect Antigravity models ({e})")
+    have = set()
+    for line in out.splitlines():
+        slug = line.split()[0] if line.strip().startswith("gemini-") else ""
+        if not slug:
+            continue
+        have.add(re.sub(r"-(low|medium|high)$", "", slug))
+    checked.append(f"gemini ids: {len(have)} found")
+    for used in re.findall(r"gemini-3\.[0-9]+-[a-z-]+", M):
+        base = re.sub(r"-(low|medium|high)$", "", used)
+        if base not in have:
+            deltas.append(f"gemini: matrix uses `{used}` but Antigravity does not offer it")
+    normalized_matrix = M.lower().replace(" ", "-")
+    adopted = [int(x) for x in re.findall(r"gemini-3\.(\d+)-flash", normalized_matrix)]
+    adopted_max = max(adopted or [0])
+    for m in sorted(have):
+        if m not in normalized_matrix and "-flash" in m:
+            minor = int(re.search(r"gemini-3\.(\d+)-flash", m).group(1))
+            if minor > adopted_max:
+                deltas.append(f"gemini: NEW model `{m}` available -- consider for long/cheap classes")
+        elif m not in normalized_matrix and "-pro" in m:
+            deltas.append(f"gemini: NEW model `{m}` available -- consider for long/cheap classes")
+
+def ollama_models():
+    try:
+        out = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return deltas.append("ollama: not reachable")
+    have = {l.split()[0] for l in out.splitlines()[1:] if l.strip()}
+    checked.append(f"ollama models: {len(have)}")
+    if not any("gpt-oss" in h for h in have):
+        deltas.append("ollama: gpt-oss:20b missing -- it is the only local model both harnesses can drive")
+
+
+def matrix_age():
+    m = re.search(r"verified:\s*(\d{4}-\d{2}-\d{2})", M)
+    if not m:
+        return deltas.append("matrix: no `verified:` datestamp -- add one")
+    age = (datetime.date.today() - datetime.date.fromisoformat(m.group(1))).days
+    checked.append(f"matrix age: {age}d")
+    if age > MAX_AGE_DAYS:
+        deltas.append(f"matrix: prices/reliability last verified {age}d ago (>{MAX_AGE_DAYS}) "
+                      "-- re-verify Claude/Gemini pricing and check for model regressions online")
+
+
+for fn in (codex_models, gemini_models, ollama_models, matrix_age):
+    try:
+        fn()
+    except Exception as e:
+        deltas.append(f"{fn.__name__}: check failed ({e})")
+
+print("matrix-evidence  " + " | ".join(checked))
+if deltas:
+    print(f"\n{len(deltas)} DELTA(S):")
+    for d in deltas:
+        print(f"  - {d}")
+    sys.exit(1)
+print("\nNO CHANGES -- matrix is current, spend no tokens.")

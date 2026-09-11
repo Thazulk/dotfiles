@@ -47,41 +47,36 @@ if (Test-ToolCommand mise) {
     Write-Warning 'mise is missing; install it first, then rerun this script.'
 }
 
-if (-not (Test-ToolCommand rtk)) {
-    if (Test-ToolCommand brew) {
-        Invoke-ToolStep 'brew install rtk' { brew install rtk }
-    } else {
-        Write-Warning 'RTK needs a package-manager install on this platform.'
-    }
-}
-
-if (Test-ToolCommand npm) {
-    Invoke-ToolStep 'npm MCP tools' {
-        npm install -g --allow-scripts=@suatkocar/codegraph,codebase-memory-mcp @upstash/context7-mcp codebase-memory-mcp @suatkocar/codegraph
-    }
-} else {
-    Write-Warning 'npm is missing.'
-}
-
-if (Test-ToolCommand uv) {
-    if (-not (Test-ToolCommand ddgs)) { Invoke-ToolStep 'uv tool install ddgs' { uv tool install ddgs } }
-    if (-not (Test-ToolCommand headroom)) { Invoke-ToolStep 'uv tool install headroom-ai[all]' { uv tool install 'headroom-ai[all]' } }
-    if (-not (Test-ToolCommand repowise)) { Invoke-ToolStep 'uv tool install repowise' { uv tool install repowise } }
-} else {
-    Write-Warning 'uv is missing; DDGS, Headroom, and Repowise were skipped.'
-}
-
 if (Test-ToolCommand codex) {
+    python "$PSScriptRoot/configure-agent-defaults"
+}
+
+if ((Test-ToolCommand codex) -or (Test-ToolCommand claude)) {
     foreach ($server in @(
-        @{ Name = 'context7'; Command = 'context7-mcp'; Arguments = @() },
-        @{ Name = 'codebase-memory'; Command = 'codebase-memory-mcp'; Arguments = @() },
-        @{ Name = 'codegraph'; Command = 'codegraph'; Arguments = @('serve') },
-        @{ Name = 'ddgs'; Command = 'ddgs'; Arguments = @('mcp') },
-        @{ Name = 'repowise'; Command = 'repowise'; Arguments = @('mcp') }
+        @{ Name = 'context7'; Command = 'context7-mcp'; Tool = 'npm:@upstash/context7-mcp'; Arguments = @() },
+        @{ Name = 'codebase-memory'; Command = 'codebase-memory-mcp'; Tool = 'npm:codebase-memory-mcp'; Arguments = @() },
+        @{ Name = 'codegraph'; Command = 'codegraph'; Tool = 'npm:@suatkocar/codegraph'; Arguments = @('serve') },
+        @{ Name = 'ddgs'; Command = 'ddgs'; Tool = 'pipx:ddgs'; Arguments = @('mcp') },
+        @{ Name = 'repowise'; Command = 'repowise'; Tool = 'pipx:repowise'; Arguments = @('mcp') }
     )) {
-        $resolved = Get-Command $server.Command -ErrorAction SilentlyContinue
+        $toolPath = & mise which $server.Command --tool $server.Tool 2>$null
+        $resolved = if ($LASTEXITCODE -eq 0) { Get-Command $toolPath -ErrorAction SilentlyContinue } else { $null }
         if ($null -ne $resolved) {
-            Add-CodexMcp $server.Name $resolved.Source $server.Arguments
+            if (Test-ToolCommand codex) {
+                Add-CodexMcp $server.Name $resolved.Source $server.Arguments
+            }
+            if (Test-ToolCommand claude) {
+                $userConfig = Join-Path $HOME '.claude.json'
+                $existing = $null
+                if (Test-Path $userConfig) {
+                    $existing = (Get-Content $userConfig -Raw | ConvertFrom-Json).mcpServers.($server.Name)
+                }
+                if ($null -eq $existing) {
+                    & claude mcp add --scope user $server.Name -- $resolved.Source @($server.Arguments)
+                } elseif ($existing.command -ne $resolved.Source) {
+                    Write-Warning "Claude MCP $($server.Name) has a different path; remove it with --scope user and rerun."
+                }
+            }
         }
     }
 } else {

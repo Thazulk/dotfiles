@@ -111,37 +111,85 @@ If auto-detect fails:
 
 ### AI toolstack (manual once per machine)
 
-The portable definitions are in this repository: mise runtimes, the shared
-`~/.agents/skills/` directory (including Caveman), and the Codex
-`gpt-toolset` skill. Install the executable tools explicitly after applying
-dotfiles; this keeps `chezmoi apply` deterministic and avoids unexpected
-package downloads or assistant-config changes.
+Global policy is rendered from `.chezmoitemplates/global-agent-policy.md` into
+both `~/.codex/AGENTS.md` and `~/.claude/CLAUDE.md`. Both clients load their
+user-wide file even without project instructions. Project files add local rules;
+Codex loads its global file automatically, while Claude project files can import
+other project guidance as needed. No project AGENTS.md changes are required here.
 
 ```bash
-# macOS, Linux, or WSL
 bootstrap-ai-toolstack
 check-ai-toolstack
-
-# opt-in integrations that modify the local client/proxy setup
-TOOLSTACK_ENABLE_RTK=1 bootstrap-ai-toolstack
-TOOLSTACK_ENABLE_HEADROOM=1 bootstrap-ai-toolstack
+# Skip reinstalling unrelated mise runtimes on an already provisioned machine:
+TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
+# Runtime routing:
+agent-quota
+agent-route code
+agent-route hard
+agent-ask-claude /absolute/prompt.md
+agent-ask-codex /absolute/prompt.md
+agent-ask-gemini /absolute/prompt.md
 ```
 
-On native Windows PowerShell:
+The AI CLI/MCP tools are declared in `~/.config/mise/config.toml` (tracked here
+as `dot_config/mise/config.toml`): ast-grep, RTK, Context7, codebase-memory-mcp,
+CodeGraph, DDGS, Repowise, Headroom, and pnpm. The npm and pipx backends cover the
+packages; the Python tools use Python 3.13, including DDGS MCP and Headroom extras.
+DDGS 9.x pins MCP below 2 because it imports the SDK 1.x FastMCP API.
+No Brewfile is needed for this set. Homebrew Bundle supports a Brewfile if future
+system dependencies need it: https://docs.brew.sh/Brew-Bundle-and-Brewfile.
 
-```powershell
-& "$HOME/.local/scripts/bootstrap-ai-toolstack.ps1"
-```
+`mise install` installs the declared tools. `bootstrap-ai-toolstack` runs that
+installation and registers local MCP servers globally for Codex and Claude
+(`claude mcp add --scope user`). `TOOLSTACK_SKIP_MISE=1` only refreshes the client
+configuration. Executable paths are resolved from mise on each machine; restart
+clients after setup. The CodeGraph launcher calls its mise-installed native binary
+directly because the npm 0.2.1 launcher recurses through its global symlink. Its
+npm installer downloads the current native release, so only the wrapper is pinned.
+Old npm/uv/Homebrew copies are not uninstalled automatically.
 
-The bootstrap adds missing Codex MCP servers using the commands found on that
-machine. It intentionally does not version `~/.codex/config.toml`: it can hold
-machine-specific paths and locally added servers. If an existing MCP command
-path changes, remove that one entry with `codex mcp remove NAME`, then rerun the
-bootstrap.
+Native Windows uses `~/.local/scripts/bootstrap-ai-toolstack.ps1`; the Bash
+health/review helpers require Git Bash or WSL. PowerShell path mismatches are
+reported for explicit removal and re-registration.
 
-`repowise init` and indexing remain project-level actions. Put project-specific
-instructions in that repository's `AGENTS.md`; do not add generated indexes,
-tokens, or API credentials to this dotfiles repository.
+`~/.config/agents/codex-defaults.json` persists the PDF's `gpt-5.5`, `medium`,
+`workspace-write`, and `on-request` defaults. `~/.claude/MODEL-MATRIX.md`
+persists the colleague toolkit's routing matrix. `configure-agent-defaults`
+merges the Codex defaults into the local Codex configuration, preserving other
+settings and saving the first previous version as `config.toml.before-global-setup`
+with mode 0600. The bootstrap applies it; run it again after changing tracked
+defaults. App/task-specific overrides and organization policies can take precedence.
+Neither the auth-bearing `~/.claude.json` nor the machine-local Codex config is
+committed.
+
+Sign in separately with `codex login`, `claude auth login`, and any Gemini/Ollama
+setup you actually use. The routing flow is the colleague toolkit model:
+`agent-quota`, then `agent-route cheap|code|hard|long|orchestrate`, then a scoped
+helper call only when delegation is useful. `agent-health` is a live smoke test
+and can call Codex/Gemini/shared-memory; use `check-ai-toolstack` for a cheaper
+installed-file/command check. Peer output is advice and still needs local
+verification.
+
+The PDF's SaaS connectors, Clockify helper, and extra skills are optional
+role-specific integrations, not prerequisites for the portable Codex/Claude/Gemini
+tooling. No unverified skill names, private Clockify implementation, OAuth
+credentials, Docker daemon, or local model downloads are fabricated by the bootstrap.
+Existing artifact/browser plugins and bundled runtimes remain client-managed.
+Connect service accounts through their clients when needed; never commit tokens.
+
+`repowise init` and indexing remain project-level decisions. The global policy
+falls back to normal tools if an index is missing. RTK and Headroom integration
+are opt-in with `TOOLSTACK_ENABLE_RTK=1` / `TOOLSTACK_ENABLE_HEADROOM=1`.
+
+Verification: `python3 tests/check_agent_setup.py`, `agent-route code`, and
+`matrix-evidence` when the local model caches are available. Rollback: revert
+these source changes and apply the affected files;
+restore the local Codex backup if needed, and remove only the added MCP entries
+with `codex mcp remove NAME` / `claude mcp remove --scope user NAME`.
+
+Sources: [Codex global instructions](https://learn.chatgpt.com/docs/agent-configuration/agents-md),
+[Claude memory](https://code.claude.com/docs/en/memory),
+[Claude MCP scopes](https://code.claude.com/docs/en/mcp).
 
 ---
 

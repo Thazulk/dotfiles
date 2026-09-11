@@ -1,0 +1,53 @@
+#!/usr/bin/env zsh
+set -u
+
+run_with_timeout() {
+  local seconds="$1"
+  shift
+  python3 -c 'import subprocess, sys
+try:
+    sys.exit(subprocess.run(sys.argv[2:], timeout=float(sys.argv[1])).returncode)
+except subprocess.TimeoutExpired:
+    print("(timeout)", file=sys.stderr)
+    sys.exit(124)' "$seconds" "$@"
+}
+
+echo "== quota =="
+agent-quota || true
+
+echo
+echo "== route: cheap =="
+agent-route cheap || true
+
+echo
+echo "== route: code =="
+agent-route code || true
+
+echo
+echo "== route: long =="
+agent-route long || true
+
+echo
+echo "== route: orchestrate =="
+agent-route orchestrate || true
+
+echo
+echo "== codex cli =="
+run_with_timeout 60 agent-ask-codex 'Reply exactly: ok' || echo "(timeout/failed)"
+
+echo
+echo "== shared memory =="
+NPM_CONFIG_CACHE=/private/tmp/codex-npm-cache run_with_timeout 60 npx -y github:dan-calin/shared-agent-memory status || echo "(timeout/failed)"
+
+echo
+echo "== gemini api =="
+run_with_timeout 20 agent-ask-gemini 'Reply exactly: ok' || echo "(timeout/failed)"
+
+echo
+echo "== claude mcp =="
+run_with_timeout 30 claude mcp list || echo "(timeout/failed)"
+echo "(note: Claude live sessions may still call Codex even if this CLI health says codex disconnected)"
+
+echo
+echo "== gemini mcp =="
+run_with_timeout 30 gemini mcp list || echo "(timeout/failed)"

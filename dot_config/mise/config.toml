@@ -1,7 +1,6 @@
 [tools]
 go = "latest"
-node = "latest"
-npm = "latest"
+node = "24.19.0"
 python = ["latest", "3.13"]
 rust = "latest"
 neovim = "nightly"
@@ -22,6 +21,23 @@ uv = "latest"
 herdr = "latest"
 lazygit = "latest"
 delta = "latest"
+"npm:corepack" = "latest"
+"npm:pnpm" = "latest"
+postgres = "latest"
+
+# Global AI toolstack. MCP registration is handled by bootstrap-ai-toolstack.
+ast-grep = "0.45.3"
+rtk = "0.44.1"
+"npm:@upstash/context7-mcp" = "4.0.7"
+"npm:codebase-memory-mcp" = { version = "0.10.8", npm_args = "--ignore-scripts=false --allow-scripts=codebase-memory-mcp" }
+"npm:@suatkocar/codegraph" = { version = "0.2.1", npm_args = "--ignore-scripts=false --allow-scripts=@suatkocar/codegraph", os = ["macos", "linux"] }
+# DDGS 9.x imports FastMCP from the MCP 1.x SDK.
+"pipx:ddgs" = { version = "9.14.4", extras = "mcp", uvx_args = "--python 3.13 --with mcp<2", pipx_args = "--python 3.13 --pip-args='mcp<2'" }
+"pipx:repowise" = { version = "0.31.0", uvx_args = "--python 3.13", pipx_args = "--python 3.13" }
+"pipx:headroom-ai" = { version = "0.31.0", extras = "all", uvx_args = "--python 3.13", pipx_args = "--python 3.13" }
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]
+
+[settings.npm]
+package_manager = "npm"

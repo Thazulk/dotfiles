@@ -1,0 +1,18 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+  echo "usage: agent-ask-codex <prompt | prompt-file>" >&2
+  exit 2
+fi
+
+if [[ $# -eq 1 && -f "$1" ]]; then
+  prompt="$(cat "$1")"
+else
+  prompt="$*"
+fi
+
+model="${CODEX_MODEL:-gpt-5.5}"
+sandbox="${CODEX_SANDBOX:-read-only}"
+
+exec codex exec -m "$model" --sandbox "$sandbox" --skip-git-repo-check "$prompt"

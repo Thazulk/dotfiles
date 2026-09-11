@@ -1,0 +1,141 @@
+#!/usr/bin/env python3
+"""Pick the agent+model for a task class, cheapest-money-first.
+
+Usage:  agent-route <cheap|code|hard|long|orchestrate>
+Matrix: ~/.claude/MODEL-MATRIX.md
+
+Cost tiers:
+  free  -- local Ollama, no quota, no money
+  quota -- subscription already paid for; marginal cost zero until exhausted
+  money -- Codex top-up: real per-token spend, so Codex demotes below free/quota
+           choices. `hard` and `orchestrate` intentionally keep Astra because a
+           weak model on hard work costs more in retries than the cheaper tier saved.
+"""
+import subprocess, sys, os, time
+
+PROBE_TTL = 900
+PROBE_CACHE = os.path.expanduser("~/.cache/agent-route/codex-probe")
+
+NORMAL_CODEX = "gpt-5.5"          # everyday Codex default; gpt-5.6-* remains banned
+PREMIUM_CODEX = "gpt-6-astra"     # expensive; use for high-value implementation/review/orchestration
+
+# label, command template, agent, cost tier, codex model hint
+CHAIN = {
+    "cheap": [
+        ("Claude Haiku 4.5",      None,                                                                           "claude", "quota", None),
+        ("Gemini 3.8 Flash", 'GEMINI_MODEL=gemini-3.8-flash agent-ask-gemini {q}', "gemini", "quota", None),
+        ("local gpt-oss:20b",     'XDG_DATA_HOME=/private/tmp/codex-opencode-data XDG_CACHE_HOME=/private/tmp/codex-opencode-cache opencode run --model ollama/gpt-oss:20b {q}', "local",  "free",  None),
+        ("Codex",                 'codex exec -m {m} --sandbox read-only {q}',                                    "codex",  "money", NORMAL_CODEX),
+    ],
+    "code": [
+        ("Codex",           'codex exec -m {m} --sandbox workspace-write {q}', "codex",  "money", NORMAL_CODEX),
+        ("Codex Astra",     'codex exec -m {m} --sandbox workspace-write {q}', "codex",  "money", PREMIUM_CODEX),
+        ("Claude Sonnet 5", None,                                             "claude", "quota", None),
+        ("Gemini 3.8 Flash", 'GEMINI_MODEL=gemini-3.8-flash agent-ask-gemini {q}', "gemini", "quota", None),
+    ],
+    "hard": [
+        ("Codex Astra",   'codex exec -m {m} --sandbox workspace-write {q}', "codex",  "money", PREMIUM_CODEX),
+        ("Claude Opus 5", None,                                             "claude", "quota", None),
+        ("Codex",         'codex exec -m {m} --sandbox workspace-write {q}', "codex",  "money", NORMAL_CODEX),
+        ("Claude Fable 5", None,                                            "claude", "quota", None),
+    ],
+    "long": [
+        ("Claude Sonnet 5", None, "claude", "quota", None),
+        ("Claude Opus 5",   None, "claude", "quota", None),
+        ("Gemini 3.8 Flash", 'GEMINI_MODEL=gemini-3.8-flash agent-ask-gemini {q}', "gemini", "quota", None),
+    ],
+    "orchestrate": [
+        ("Codex Astra",   'codex exec -m {m} --sandbox workspace-write {q}', "codex",  "money", PREMIUM_CODEX),
+        ("Codex",         'codex exec -m {m} --sandbox workspace-write {q}', "codex",  "money", NORMAL_CODEX),
+        ("Claude Opus 5", None,                                             "claude", "quota", None),
+        ("Claude Sonnet 5", None,                                           "claude", "quota", None),
+    ],
+}
+
+
+def exhausted():
+    try:
+        out = subprocess.run(["agent-quota"], capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return set()
+    return {l.split(":")[0].strip() for l in out.splitlines() if "EXHAUSTED" in l}
+
+
+def codex_live():
+    """Cheapest possible liveness probe; cached so routing stays ~free."""
+    try:
+        if time.time() - os.stat(PROBE_CACHE).st_mtime < PROBE_TTL:
+            return open(PROBE_CACHE).read().strip() == "live"
+    except OSError:
+        pass
+    try:
+        r = subprocess.run(
+            ["codex", "exec", "-m", "gpt-5.5", "--sandbox", "read-only",
+             "--skip-git-repo-check", "ok"],
+            capture_output=True, text=True, timeout=90, stdin=subprocess.DEVNULL)
+        live = r.returncode == 0
+    except Exception:
+        live = False
+    os.makedirs(os.path.dirname(PROBE_CACHE), exist_ok=True)
+    open(PROBE_CACHE, "w").write("live" if live else "dead")
+    return live
+
+
+def local_model_available(model="gpt-oss:20b"):
+    try:
+        out = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=30).stdout
+    except Exception:
+        return False
+    return any(line.split()[:1] == [model] for line in out.splitlines()[1:])
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] not in CHAIN:
+        print(__doc__.strip() + "\n\nclasses: " + ", ".join(CHAIN))
+        sys.exit(1)
+    cls, dead = sys.argv[1], exhausted()
+    entries, notes = [], []
+
+    for label, cmd, agent, cost, model_hint in CHAIN[cls]:
+        if agent == "local" and not local_model_available():
+            notes.append(f"  skip  {label}  [ollama model missing]")
+            continue
+        if agent in dead:
+            if agent != "codex":
+                notes.append(f"  skip  {label}  [{agent} quota exhausted]")
+                continue
+            if not codex_live():
+                notes.append(f"  skip  {label}  [codex exhausted, probe failed]")
+                continue
+            # quota gone -> top-up is real money: keep the class model, but demote below free/quota.
+            model = model_hint or NORMAL_CODEX
+            label = f"{label} {model}  [TOP-UP $ -- quota spent]"
+            cost = "money"
+        else:
+            model = model_hint if agent == "codex" else None
+            if agent == "codex":
+                label = f"{label} {model}"
+                cost = "quota"        # inside quota it is subscription-paid, not top-up
+        entries.append((0 if cost != "money" else 1, label, cmd, model, cost))
+
+    entries.sort(key=lambda e: e[0])          # stable: money last
+    print(f"class: {cls}   exhausted: {', '.join(sorted(dead)) or 'none'}")
+    print("-" * 62)
+    for i, (_, label, cmd, model, cost) in enumerate(entries):
+        tag = {"free": "free", "quota": "paid-for", "money": "COSTS $"}[cost]
+        line = (cmd or "stay in this session (its own model)")
+        if model:
+            line = line.replace("{m}", model)
+        line = line.replace("{q}", '"<prompt>"')
+        if i == 0:
+            print(f"> USE  {label}   ({tag})\n        {line}")
+        else:
+            print(f"  next: {label}   ({tag})")
+    for n in notes:
+        print(n)
+    if not entries:
+        print('  everything exhausted -> opencode run --model ollama/gpt-oss:20b "<prompt>"')
+
+
+if __name__ == "__main__":
+    main()

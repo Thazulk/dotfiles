@@ -22,9 +22,16 @@ check_file() {
 }
 
 printf '%s\n' '==> AI toolstack check'
-for command in mise uv node npm rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codex claude; do
+for command in mise uv node npm pnpm rg ast-grep git gh docker go curl agent-health agent-route agent-quota matrix-evidence agent-ask-codex agent-ask-claude agent-ask-gemini rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codex claude ollama; do
     check_command "$command"
 done
+
+check_file codex-global-policy "$HOME/.codex/AGENTS.md"
+check_file claude-global-policy "$HOME/.claude/CLAUDE.md"
+check_file codex-defaults "$HOME/.config/agents/codex-defaults.json"
+check_file model-matrix "$HOME/.claude/MODEL-MATRIX.md"
+check_file route-gate-hook "$HOME/.claude/hooks/route-gate.sh"
+check_file route-enforce-hook "$HOME/.claude/hooks/route-enforce.sh"
 
 check_file caveman-skill "$HOME/.agents/skills/caveman/SKILL.md"
 check_file gpt-toolset-skill-codex "$HOME/.codex/skills/gpt-toolset/SKILL.md"
@@ -41,4 +48,4 @@ if command -v claude >/dev/null 2>&1; then
 fi
 
 printf '\n%s\n' '==> Not installed by this toolstack (no bootstrap/init script in this repo)'
-printf '%s\n' 'FFF-MCP, Codeburn — mentioned in the reference guide only. Add a bootstrap step before relying on them for either client.'
+printf '%s\n' 'clockify-codex, FFF-MCP, Codeburn — mentioned in the reference guide only. Add a bootstrap step before relying on them for either client.'

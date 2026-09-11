@@ -27,6 +27,16 @@
             "statusMessage": "Loading repowise context..."
           }
         ]
+      },
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$HOME/.claude/hooks/herdr-agent-state.sh\" ]; then bash \"$HOME/.claude/hooks/herdr-agent-state.sh\" session; fi",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -36,6 +46,17 @@
           {
             "type": "command",
             "command": "rtk hook claude"
+          }
+        ]
+      },
+      {
+        "matcher": "Bash|PowerShell",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "repowise-rewrite",
+            "timeout": 5,
+            "statusMessage": "Distilling command output..."
           }
         ]
       }
@@ -53,29 +74,5 @@
     }
   },
   "theme": "dark",
-  "mcpServers": {
-    "codegraph": {
-      "command": "{{ .chezmoi.homeDir }}/.local/share/mise/installs/node/latest/bin/codegraph",
-      "args": ["serve"]
-    },
-    "ddgs": {
-      "command": "{{ .chezmoi.homeDir }}/.local/bin/ddgs",
-      "args": ["mcp"]
-    },
-    "repowise": {
-      "command": "{{ .chezmoi.homeDir }}/.local/share/uv/tools/repowise/bin/repowise",
-      "args": ["mcp"],
-      "description": "repowise: codebase intelligence — docs, graph, git signals, dead code, decisions"
-    },
-    "context7": {
-      "command": "{{ .chezmoi.homeDir }}/.local/share/mise/installs/node/latest/bin/context7-mcp",
-      "args": [],
-      "description": "context7: current, library-specific technical documentation"
-    },
-    "codebase-memory": {
-      "command": "{{ .chezmoi.homeDir }}/.local/share/mise/installs/node/latest/bin/codebase-memory-mcp",
-      "args": [],
-      "description": "codebase-memory: persistent codebase knowledge graph and structural search"
-    }
-  }
+  "effortLevel": "medium"
 }

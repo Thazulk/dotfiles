@@ -1,0 +1,9 @@
+#!/usr/bin/env bash
+# The npm 0.2.1 shell launcher resolves its global symlink incorrectly and recurses.
+set -euo pipefail
+native="$(mise where npm:@suatkocar/codegraph)/lib/node_modules/@suatkocar/codegraph/bin/codegraph-native"
+if [[ ! -x "$native" ]]; then
+    echo 'CodeGraph native binary missing; run bootstrap-ai-toolstack.' >&2
+    exit 1
+fi
+exec "$native" "$@"

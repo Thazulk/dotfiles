@@ -1,0 +1,15 @@
+#!/usr/bin/env zsh
+set -euo pipefail
+
+if [[ $# -eq 0 ]]; then
+  echo "usage: agent-ask-claude <prompt | prompt-file>" >&2
+  exit 2
+fi
+
+if [[ $# -eq 1 && -f "$1" ]]; then
+  prompt="$(cat "$1")"
+else
+  prompt="$*"
+fi
+
+exec claude -p --permission-mode plan --max-budget-usd "${CLAUDE_MAX_BUDGET_USD:-0.20}" "$prompt"

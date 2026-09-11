@@ -1,0 +1,50 @@
+#!/usr/bin/env python3
+"""Merge tracked Codex defaults without committing machine-local config or secrets."""
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import tempfile
+import tomllib
+
+
+def merge(source, defaults):
+    expected = tomllib.loads(source) | defaults
+    # Only edit simple root assignments; validate the entire result before writing.
+    boundary = re.search(r"(?m)^\s*\[", source)
+    root, rest = (source[:boundary.start()], source[boundary.start():]) if boundary else (source, "")
+    for key, value in defaults.items():
+        line = f"{key} = {json.dumps(value)}\n"
+        root, count = re.subn(rf"(?m)^{re.escape(key)}\s*=.*(?:\n|$)", lambda _: line, root)
+        if not count:
+            root = line + root
+    result = root + rest
+    if tomllib.loads(result) != expected:
+        raise ValueError("Config has complex root assignments; refusing to change unrelated settings")
+    return result
+
+
+def main():
+    home = Path.home()
+    defaults = json.loads((home / ".config/agents/codex-defaults.json").read_text())
+    path = Path(os.environ.get("CODEX_HOME", str(home / ".codex"))) / "config.toml"
+    source = path.read_text() if path.exists() else ""
+    result = merge(source, defaults)
+    if result == source:
+        print("ok: Codex global defaults")
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    if path.exists():
+        backup = path.with_name("config.toml.before-global-setup")
+        if not backup.exists():
+            shutil.copy2(path, backup)
+            backup.chmod(0o600)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as output:
+        output.write(result)
+    os.replace(output.name, path)
+    print("updated: Codex global defaults")
+
+
+if __name__ == "__main__":
+    main()

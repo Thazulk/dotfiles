@@ -1,0 +1,165 @@
+#!/usr/bin/env python3
+"""Report remaining quota headroom for Claude Code, Codex, and Gemini.
+
+Codex is authoritative: it records rate_limits (used_percent + reset time).
+Claude Code records only per-message token usage, so its 5h rolling window is
+summed from transcripts -- no plan cap exists in local data, so we report
+tokens burned, not a percentage of a limit we cannot see.
+Gemini CLI chat files store per-message token counts but no quota limit, so we
+report local token burn, not remaining percentage.
+"""
+import json, os, time, glob, sys
+from datetime import datetime, timezone
+
+HOME = os.path.expanduser("~")
+WINDOW_H = 5
+
+
+def _newest(paths):
+    paths = [p for p in paths if os.path.isfile(p)]
+    return max(paths, key=os.path.getmtime) if paths else None
+
+
+def _tokens(n):
+    return f"{n} tokens" if n < 1000 else f"{n/1000:.0f}k tokens"
+
+
+def codex():
+    f = _newest(glob.glob(f"{HOME}/.codex/sessions/**/*.jsonl", recursive=True))
+    if not f:
+        return "codex   : no sessions found"
+    latest = None
+    with open(f, errors="replace") as fh:
+        for line in fh:
+            if '"rate_limits"' not in line:
+                continue
+            try:
+                rl = json.loads(line)["payload"]["rate_limits"]
+            except Exception:
+                continue
+            if rl:
+                latest = rl
+    if not latest:
+        return "codex   : no rate_limit records in newest session"
+    age_h = (time.time() - os.path.getmtime(f)) / 3600
+    out = []
+    for key, w in latest.items():
+        if not isinstance(w, dict) or "used_percent" not in w:
+            continue                      # skips limit_id / limit_name strings
+        mins = w.get("window_minutes") or 0
+        label = {300: "5h", 10080: "weekly", 1440: "daily"}.get(mins, f"{mins/60:.0f}h")
+        used = w.get("used_percent", 0.0)
+        resets = w.get("resets_at")
+        when = ""
+        if resets:
+            secs = resets - time.time()
+            when = f", resets in {secs/3600:.1f}h" if secs > 0 else ", expired"
+        flag = "  <-- EXHAUSTED" if used >= 95 else ""
+        out.append(f"{label} {used:.0f}%{when}{flag}")
+    stale = f"  [data {age_h:.1f}h old]" if age_h > 1 else ""
+    return "codex   : " + " | ".join(out) + stale
+
+
+def claude():
+    cutoff = time.time() - WINDOW_H * 3600
+    tin = tout = cache = msgs = 0
+    for f in glob.glob(f"{HOME}/.claude/projects/**/*.jsonl", recursive=True):
+        if os.path.getmtime(f) < cutoff:
+            continue
+        with open(f, errors="replace") as fh:
+            for line in fh:
+                if '"usage"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                u = (d.get("message") or {}).get("usage")
+                ts = d.get("timestamp")
+                if not u or not ts:
+                    continue
+                try:
+                    t = datetime.fromisoformat(ts.replace("Z", "+00:00")).timestamp()
+                except Exception:
+                    continue
+                if t < cutoff:
+                    continue
+                tin += u.get("input_tokens", 0)
+                tout += u.get("output_tokens", 0)
+                cache += u.get("cache_read_input_tokens", 0) + u.get("cache_creation_input_tokens", 0)
+                msgs += 1
+    total = tin + tout + cache
+    return (f"claude  : {WINDOW_H}h window: {total/1000:.0f}k tokens over {msgs} msgs "
+            f"(in {tin/1000:.0f}k, out {tout/1000:.0f}k, cache {cache/1000:.0f}k) "
+            f"-- no plan cap in local data, use /usage for %")
+
+
+def gemini():
+    if not os.path.isdir(f"{HOME}/.gemini"):
+        return "gemini  : not installed"
+    cutoff = time.time() - 24 * 3600
+    counts = {"input": 0, "output": 0, "cached": 0, "thoughts": 0, "tool": 0, "total": 0}
+    msgs = 0
+    models = set()
+    for f in glob.glob(f"{HOME}/.gemini/codex-api-usage.jsonl"):
+        with open(f, errors="replace") as fh:
+            for line in fh:
+                try:
+                    d = json.loads(line)
+                    t = datetime.fromisoformat(d["ts"].replace("Z", "+00:00")).timestamp()
+                except Exception:
+                    continue
+                if t < cutoff:
+                    continue
+                for k in counts:
+                    counts[k] += int(d.get(k) or 0)
+                if d.get("model"):
+                    models.add(d["model"])
+                msgs += 1
+    for f in glob.glob(f"{HOME}/.gemini/tmp/**/chats/*.jsonl", recursive=True):
+        if os.path.getmtime(f) < cutoff:
+            continue
+        with open(f, errors="replace") as fh:
+            for line in fh:
+                if '"tokens"' not in line:
+                    continue
+                try:
+                    d = json.loads(line)
+                except Exception:
+                    continue
+                for msg in d.get("$set", {}).get("messages", []) + [d]:
+                    t = msg.get("tokens")
+                    if not isinstance(t, dict):
+                        continue
+                    for k in counts:
+                        counts[k] += int(t.get(k) or 0)
+                    if msg.get("model"):
+                        models.add(msg["model"])
+                    msgs += 1
+    if not msgs:
+        return "gemini  : no local token records in last 24h; CLI has no noninteractive quota %"
+    model_note = ", ".join(sorted(models)) if models else "unknown model"
+    return (f"gemini  : 24h local CLI/API records: {_tokens(counts['total'])} over {msgs} msgs "
+            f"(in {_tokens(counts['input'])}, out {_tokens(counts['output'])}, "
+            f"cached {_tokens(counts['cached'])}, thoughts {_tokens(counts['thoughts'])}) "
+            f"-- {model_note}; no quota % in local data")
+
+
+def main():
+    print(f"agent quota  {datetime.now(timezone.utc).astimezone():%Y-%m-%d %H:%M %Z}")
+    print("-" * 62)
+    for fn in (claude, codex, gemini):
+        try:
+            print(fn())
+        except Exception as e:
+            print(f"{fn.__name__:8}: ERROR {e}")
+    print("-" * 62)
+    print("local (free, no quota, when installed): opencode run --model ollama/gpt-oss:20b")
+
+
+if __name__ == "__main__":
+    if "--selfcheck" in sys.argv:
+        assert "claude" in claude() and "codex" in codex(), "collectors broken"
+        print("selfcheck OK")
+    else:
+        main()
