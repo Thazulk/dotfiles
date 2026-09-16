@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# Refresh agent plugin/tooling surfaces without changing project worktrees.
+set -u
+
+export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
+
+say() { printf '%s\n' "$*"; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+run() {
+    say "+ $*"
+    if "$@"; then
+        return 0
+    fi
+    say "WARNING: failed: $*" >&2
+    return 1
+}
+
+codex_plugin_installed() {
+    grep -q "\\[plugins\\.\"$1\"\\]" "$HOME/.codex/config.toml" 2>/dev/null
+}
+
+claude_plugin_installed() {
+    claude plugin list 2>/dev/null | grep -q "$1"
+}
+
+say "==> AI toolstack update"
+
+if have codex; then
+    run codex plugin marketplace upgrade --json
+    codex_plugin_installed superpowers@openai-curated || run codex plugin add superpowers@openai-curated
+    codex_plugin_installed ponytail@ponytail || run codex plugin add ponytail@ponytail
+else
+    say "skip: codex is not installed"
+fi
+
+if have claude; then
+    run claude plugin marketplace update
+    if claude_plugin_installed superpowers@claude-plugins-official; then
+        run claude plugin update superpowers@claude-plugins-official -y --scope user --json
+    else
+        run claude plugin install superpowers@claude-plugins-official -y --scope user --json
+    fi
+    if claude_plugin_installed caveman@caveman; then
+        run claude plugin update caveman@caveman -y --scope user --json
+    fi
+else
+    say "skip: claude is not installed"
+fi
+
+if have bootstrap-ai-toolstack; then
+    TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
+fi
+
+say "==> Done."

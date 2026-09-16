@@ -41,5 +41,7 @@ scripts/bootstrap-context-stack-unix.sh
 ## Status in this dotfiles repo (2026-07-20)
 
 - Installed and wired for both Codex and Claude Code: Codegraph, DDGS, Repowise, Context7, Codebase-Memory-MCP.
-- Not installed by `bootstrap-ai-toolstack` for either client: FFF-MCP, Codeburn. No install/init scripts for these exist in this repo — only the reference guide mentions them. Add them here (bootstrap script + this skill) before relying on them.
+- CodeBurn is installed through mise as `npm:codeburn`.
+- FFF MCP is optional: set `TOOLSTACK_ENABLE_FFF=1`, then run `bootstrap-ai-toolstack`.
+- Clockify MCP is optional and credential-gated: set `CLOCKIFY_API_KEY`, then run `bootstrap-ai-toolstack`. The API key is written only to machine-local client config, never to this repo.
 - Headroom installs via `uv tool` behind `TOOLSTACK_ENABLE_HEADROOM=1`, but the integration is not confirmed client-specific; verify it actually affects Claude Code before assuming parity with Codex.

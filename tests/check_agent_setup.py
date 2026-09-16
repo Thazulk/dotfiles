@@ -14,13 +14,52 @@ model_matrix = (repo / "dot_claude/MODEL-MATRIX.md").read_text()
 assert "agent-route <class>" in model_matrix
 assert "gpt-5.5" in model_matrix and "gpt-6-astra" in model_matrix
 manifest = tomllib.loads((repo / "dot_config/mise/config.toml").read_text())
-for tool in ["npm:pnpm", "ast-grep", "rtk", "npm:@upstash/context7-mcp", "npm:codebase-memory-mcp", "npm:@suatkocar/codegraph", "pipx:ddgs", "pipx:repowise", "pipx:headroom-ai"]:
+for tool in ["npm:pnpm", "ast-grep", "rtk", "npm:@upstash/context7-mcp", "npm:codebase-memory-mcp", "npm:@suatkocar/codegraph", "npm:@playwright/mcp", "npm:nx-mcp", "npm:codeburn", "pipx:ddgs", "pipx:repowise", "pipx:headroom-ai"]:
     assert tool in manifest["tools"]
 assert manifest["tools"]["pipx:repowise"]["uvx_args"] == "--python 3.13"
 assert "mcp<2" in manifest["tools"]["pipx:ddgs"]["uvx_args"]
 for file in ["executable_bootstrap-ai-toolstack", "executable_bootstrap-ai-toolstack.ps1"]:
     bootstrap = (repo / "dot_local/scripts" / file).read_text()
     assert "npm install -g" not in bootstrap and "uv tool install" not in bootstrap
+assert "TOOLSTACK_ENABLE_FFF" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "CLOCKIFY_API_KEY" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "nx-mcp" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "nx-mcp" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack.ps1").read_text()
+assert "playwright-mcp" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "have brew" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "mcp-server" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "Claude Desktop MCP" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "superpowers@openai-curated" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "superpowers@claude-plugins-official" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack.ps1").read_text()
+for file in [
+    "agent-ask-codex",
+    "agent-ask-claude",
+    "agent-ask-gemini",
+    "agent-health",
+    "agent-quota",
+    "agent-route",
+    "matrix-evidence",
+]:
+    assert (repo / "dot_local/bin" / f"executable_{file}").exists()
+for file in [
+    "AGENT-ROUTES.md",
+    "CAVEMAN.md",
+    "CODEBURN.md",
+    "PONYTAIL.md",
+    "REPOWISE.md",
+    "RTK.md",
+    "SETUP-PROMPTS.md",
+    "WHOLE-SETUP.md",
+]:
+    assert (repo / "dot_claude/agent-routing-toolkit-docs" / file).exists()
+for file in [
+    "executable_cbm-code-discovery-gate",
+    "executable_cbm-session-reminder",
+    "executable_route-enforce.sh",
+    "executable_route-gate.sh",
+    "executable_route_enforce.py",
+]:
+    assert (repo / "dot_claude/hooks" / file).exists()
 source = 'model = "old"\n# preserve me\n[features]\nfoo = true\n[mcp_servers.private]\ncommand = "private-tool"\n'
 result = merge(source, defaults)
 assert tomllib.loads(result) == tomllib.loads(source) | defaults

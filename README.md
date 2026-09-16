@@ -120,6 +120,7 @@ other project guidance as needed. No project AGENTS.md changes are required here
 ```bash
 bootstrap-ai-toolstack
 check-ai-toolstack
+update-ai-toolstack        # refresh agent plugin marketplaces/plugins
 # Skip reinstalling unrelated mise runtimes on an already provisioned machine:
 TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 # Runtime routing:
@@ -133,17 +134,22 @@ agent-ask-gemini /absolute/prompt.md
 
 The AI CLI/MCP tools are declared in `~/.config/mise/config.toml` (tracked here
 as `dot_config/mise/config.toml`): ast-grep, RTK, Context7, codebase-memory-mcp,
-CodeGraph, DDGS, Repowise, Headroom, and pnpm. The npm and pipx backends cover the
+CodeGraph, Playwright MCP, Nx MCP, CodeBurn, DDGS, Repowise, Headroom, and pnpm. The npm and pipx backends cover the
 packages; the Python tools use Python 3.13, including DDGS MCP and Headroom extras.
 DDGS 9.x pins MCP below 2 because it imports the SDK 1.x FastMCP API.
 No Brewfile is needed for this set. Homebrew Bundle supports a Brewfile if future
 system dependencies need it: https://docs.brew.sh/Brew-Bundle-and-Brewfile.
 
 `mise install` installs the declared tools. `bootstrap-ai-toolstack` runs that
-installation and registers local MCP servers globally for Codex and Claude
+installation, installs the Superpowers agent workflow plugin for Codex/Claude
+when missing, and registers local MCP servers globally for Codex and Claude
 (`claude mcp add --scope user`). `TOOLSTACK_SKIP_MISE=1` only refreshes the client
-configuration. Executable paths are resolved from mise on each machine; restart
-clients after setup. The CodeGraph launcher calls its mise-installed native binary
+configuration. `update-ai-toolstack` refreshes Codex/Claude plugin marketplaces,
+updates installed agent workflow plugins, and then reruns the client configuration
+refresh. On macOS, `~/Library/LaunchAgents/com.thazulk.ai-toolstack-update.plist`
+runs that refresh each morning at 08:30. Executable paths are resolved from mise on
+each machine; Claude Desktop's local MCP config is merged when the app config
+exists. Restart clients after setup. The CodeGraph launcher calls its mise-installed native binary
 directly because the npm 0.2.1 launcher recurses through its global symlink. Its
 npm installer downloads the current native release, so only the wrapper is pinned.
 Old npm/uv/Homebrew copies are not uninstalled automatically.
@@ -169,6 +175,16 @@ helper call only when delegation is useful. `agent-health` is a live smoke test
 and can call Codex/Gemini/shared-memory; use `check-ai-toolstack` for a cheaper
 installed-file/command check. Peer output is advice and still needs local
 verification.
+
+Optional integrations:
+- FFF MCP: `TOOLSTACK_ENABLE_FFF=1 bootstrap-ai-toolstack`
+- Clockify MCP: set `CLOCKIFY_API_KEY`, then run `bootstrap-ai-toolstack`
+- CodeBurn: installed through mise as `codeburn`
+- Homebrew MCP: registered as `homebrew` when `brew mcp-server` is available
+- Playwright MCP: installed through mise as `playwright-mcp` and registered as `playwright`
+- Nx MCP: registered as `nx-mcp`; set `TOOLSTACK_NX_WORKSPACE=/path/to/workspace`
+  before bootstrap when registering a global client for one Nx repo
+- Superpowers: installed for Codex and Claude by `bootstrap-ai-toolstack`
 
 The PDF's SaaS connectors, Clockify helper, and extra skills are optional
 role-specific integrations, not prerequisites for the portable Codex/Claude/Gemini

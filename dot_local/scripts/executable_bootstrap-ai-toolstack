@@ -20,9 +20,40 @@ run() {
     return 1
 }
 
+add_claude_desktop_mcp() {
+    [[ "$(uname -s 2>/dev/null || true)" == "Darwin" ]] || return 0
+    local config_dir="$HOME/Library/Application Support/Claude"
+    [[ -d "$config_dir" ]] || return 0
+    local name="$1" command="$2"
+    shift 2
+    python3 - "$config_dir/claude_desktop_config.json" "$name" "$command" "$@" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+name = sys.argv[2]
+command = sys.argv[3]
+args = sys.argv[4:]
+data = json.loads(path.read_text()) if path.exists() and path.read_text().strip() else {}
+servers = data.setdefault("mcpServers", {})
+wanted = {"command": command}
+if args:
+    wanted["args"] = args
+if servers.get(name) == wanted:
+    sys.exit(0)
+servers[name] = wanted
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(json.dumps(data, indent=2) + "\n")
+path.chmod(0o600)
+print(f"ok: Claude Desktop MCP {name}")
+PY
+}
+
 add_mcp() {
     local name="$1" command="$2"
     shift 2
+    add_claude_desktop_mcp "$name" "$command" "$@"
     if have codex; then
         # Refresh only this known local server when its executable moved.
         if codex mcp get "$name" --json >"$mcp_tmp" 2>/dev/null; then
@@ -47,6 +78,86 @@ add_mcp() {
     fi
 }
 
+add_mcp_if_missing() {
+    local name="$1" command="$2"
+    shift 2
+    add_claude_desktop_mcp "$name" "$command" "$@"
+    if have codex; then
+        if codex mcp get "$name" --json >"$mcp_tmp" 2>/dev/null; then
+            say "ok: Codex MCP $name"
+        else
+            run codex mcp add "$name" -- "$command" "$@"
+        fi
+    fi
+    if have claude; then
+        if python3 -c 'import json,pathlib,sys; p=pathlib.Path.home()/".claude.json"; d=json.loads(p.read_text()).get("mcpServers",{}).get(sys.argv[1],{}) if p.exists() else {}; sys.exit(0 if d else 1)' "$name"; then
+            say "ok: Claude MCP $name"
+        else
+            run claude mcp add --scope user "$name" -- "$command" "$@"
+        fi
+    fi
+}
+
+add_codex_clockify() {
+    [[ -n "${CLOCKIFY_API_KEY:-}" ]] || return 0
+    have codex || return 0
+    python3 - <<'PY'
+import os
+from pathlib import Path
+
+path = Path.home() / ".codex/config.toml"
+source = path.read_text() if path.exists() else ""
+block = f'''[mcp_servers.clockify-mcp]
+transport = "http"
+url = "https://api.clockify.me/mcp-server/mcp"
+http_headers = {{ "x-api-key" = "{os.environ["CLOCKIFY_API_KEY"]}" }}
+'''
+lines = source.splitlines()
+out = []
+i = 0
+while i < len(lines):
+    if lines[i].strip() == "[mcp_servers.clockify-mcp]":
+        i += 1
+        while i < len(lines) and not lines[i].startswith("["):
+            i += 1
+        continue
+    out.append(lines[i])
+    i += 1
+result = "\n".join(out).rstrip()
+if result:
+    result += "\n\n"
+result += block
+path.parent.mkdir(parents=True, exist_ok=True)
+path.write_text(result)
+path.chmod(0o600)
+print("ok: Codex MCP clockify-mcp")
+PY
+}
+
+add_claude_clockify() {
+    [[ -n "${CLOCKIFY_API_KEY:-}" ]] || return 0
+    have claude || return 0
+    claude mcp remove --scope user clockify-mcp 2>/dev/null || true
+    run claude mcp add --scope user --transport http --header "x-api-key: ${CLOCKIFY_API_KEY}" clockify-mcp https://api.clockify.me/mcp-server/mcp
+}
+
+codex_plugin_installed() {
+    grep -q "\\[plugins\\.\"$1\"\\]" "$HOME/.codex/config.toml" 2>/dev/null
+}
+
+claude_plugin_installed() {
+    claude plugin list 2>/dev/null | grep -q "$1"
+}
+
+install_agent_plugins() {
+    if have codex && ! codex_plugin_installed "superpowers@openai-curated"; then
+        run codex plugin add superpowers@openai-curated
+    fi
+    if have claude && ! claude_plugin_installed "superpowers@claude-plugins-official"; then
+        run claude plugin install superpowers@claude-plugins-official -y --scope user
+    fi
+}
+
 mcp_tmp="$(mktemp)"
 trap 'rm -f "$mcp_tmp"' EXIT
 
@@ -67,11 +178,37 @@ export PATH="$HOME/.local/bin:$PATH"
 if have codex; then
     run python3 "$(dirname "$0")/configure-agent-defaults"
 fi
+install_agent_plugins
 have context7-mcp && add_mcp context7 "$(mise which context7-mcp --tool npm:@upstash/context7-mcp)"
+if have nx-mcp; then
+    if [[ -n "${TOOLSTACK_NX_WORKSPACE:-}" ]]; then
+        add_mcp nx-mcp "$(mise which nx-mcp --tool npm:nx-mcp)" "$TOOLSTACK_NX_WORKSPACE"
+    else
+        add_mcp_if_missing nx-mcp "$(mise which nx-mcp --tool npm:nx-mcp)"
+    fi
+fi
 have codebase-memory-mcp && add_mcp codebase-memory "$(mise which codebase-memory-mcp --tool npm:codebase-memory-mcp)"
+have playwright-mcp && add_mcp playwright "$(mise which playwright-mcp --tool npm:@playwright/mcp)"
+have brew && add_mcp homebrew "$(command -v brew)" mcp-server
 have codegraph && add_mcp codegraph "$(command -v codegraph)" serve
 have ddgs && add_mcp ddgs "$(mise which ddgs --tool pipx:ddgs)" mcp
 have repowise && add_mcp repowise "$(mise which repowise --tool pipx:repowise)" mcp
+have fff-mcp && add_mcp fff "$(command -v fff-mcp)"
+
+if [[ "${TOOLSTACK_ENABLE_FFF:-0}" == "1" ]] && ! have fff-mcp; then
+    say "+ install fff-mcp"
+    curl -fsSL https://raw.githubusercontent.com/dmtrKovalenko/fff.nvim/main/install-mcp.sh | bash || say "WARNING: fff-mcp install failed" >&2
+    have fff-mcp && add_mcp fff "$(command -v fff-mcp)"
+else
+    say "optional: TOOLSTACK_ENABLE_FFF=1 bootstrap-ai-toolstack"
+fi
+
+if [[ -n "${CLOCKIFY_API_KEY:-}" ]]; then
+    add_codex_clockify
+    add_claude_clockify
+else
+    say "optional: set CLOCKIFY_API_KEY before bootstrap-ai-toolstack to register Clockify MCP"
+fi
 
 if [[ "${TOOLSTACK_ENABLE_RTK:-0}" == "1" ]] && have rtk; then
     run rtk init --global --codex

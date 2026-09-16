@@ -12,6 +12,18 @@ check_command() {
     fi
 }
 
+check_mise_tool() {
+    local name="$1" tool="$2" path
+    if command -v mise >/dev/null 2>&1; then
+        path="$(mise which "$name" --tool "$tool" 2>/dev/null || true)"
+    fi
+    if [[ -n "${path:-}" ]]; then
+        printf 'ok      %-22s %s\n' "$name" "$path"
+    else
+        printf 'missing %-22s\n' "$name"
+    fi
+}
+
 check_file() {
     local label="$1" path="$2"
     if [[ -f "$path" ]]; then
@@ -22,9 +34,11 @@ check_file() {
 }
 
 printf '%s\n' '==> AI toolstack check'
-for command in mise uv node npm pnpm rg ast-grep git gh docker go curl agent-health agent-route agent-quota matrix-evidence agent-ask-codex agent-ask-claude agent-ask-gemini rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codex claude ollama; do
+for command in mise uv node npm pnpm rg ast-grep git gh docker go curl brew agent-health agent-route agent-quota matrix-evidence agent-ask-codex agent-ask-claude agent-ask-gemini rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codeburn fff-mcp codex claude ollama; do
     check_command "$command"
 done
+check_mise_tool playwright-mcp npm:@playwright/mcp
+check_mise_tool nx-mcp npm:nx-mcp
 
 check_file codex-global-policy "$HOME/.codex/AGENTS.md"
 check_file claude-global-policy "$HOME/.claude/CLAUDE.md"
@@ -40,12 +54,34 @@ check_file gpt-toolset-skill-claude "$HOME/.claude/skills/gpt-toolset/SKILL.md"
 if command -v codex >/dev/null 2>&1; then
     printf '\n%s\n' '==> Codex MCP servers'
     codex mcp list || true
+    printf '\n%s\n' '==> Codex plugins'
+    codex plugin list || true
 fi
 
 if command -v claude >/dev/null 2>&1; then
     printf '\n%s\n' '==> Claude Code MCP servers'
     claude mcp list || true
+    printf '\n%s\n' '==> Claude Code plugins'
+    claude plugin list || true
+fi
+
+claude_desktop_config="$HOME/Library/Application Support/Claude/claude_desktop_config.json"
+if [[ -f "$claude_desktop_config" ]]; then
+    printf '\n%s\n' '==> Claude Desktop MCP servers'
+    python3 - "$claude_desktop_config" <<'PY'
+import json
+import sys
+
+servers = json.load(open(sys.argv[1])).get("mcpServers", {})
+for name in sorted(servers):
+    server = servers[name]
+    print(f"{name}: {server.get('command', '')} {' '.join(server.get('args', []))}".rstrip())
+PY
 fi
 
 printf '\n%s\n' '==> Not installed by this toolstack (no bootstrap/init script in this repo)'
-printf '%s\n' 'clockify-codex, FFF-MCP, Codeburn — mentioned in the reference guide only. Add a bootstrap step before relying on them for either client.'
+if [[ -n "${CLOCKIFY_API_KEY:-}" ]]; then
+    printf '%s\n' 'Clockify MCP credential present; bootstrap-ai-toolstack registers clockify-mcp for Codex/Claude.'
+else
+    printf '%s\n' 'Clockify MCP not registered here: set CLOCKIFY_API_KEY, then rerun bootstrap-ai-toolstack.'
+fi

@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+set -euo pipefail
+binary="$(mise which codeburn --tool npm:codeburn)"
+exec "$binary" "$@"

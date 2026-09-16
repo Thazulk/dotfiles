@@ -40,6 +40,10 @@ constraints; more specific instructions refine these defaults.
 - Use installed document, spreadsheet, presentation, PDF, image and browser skills
   when relevant. Discover bundled runtimes through the client rather than pinning
   a versioned application-cache path. Verify rendered artifacts visually.
+- Use Superpowers process skills when they are installed for brainstorming,
+  systematic debugging, TDD, planning, reviews, worktrees, subagents, and final
+  verification. They guide the workflow; local code, tests, and user intent remain
+  the source of truth.
 - Use authenticated connectors for private service context when available.
   Never assume a connector/skill is installed merely because a setup guide lists it.
   Keep credentials, account state, and generated indexes out of dotfiles.
