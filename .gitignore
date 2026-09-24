@@ -1,3 +1,12 @@
 __pycache__/
 *.pyc
-.repowise/.augment-session.json
+
+# Generated code-intelligence indexes for this repo. Not dotfiles.
+.codegraph/
+.repowise/
+
+# Agent skill trees written into the source dir by plugin installers.
+# chezmoi never applies dot-prefixed source entries; the plugins own these.
+.agents/
+.continue/
+skills-lock.json
