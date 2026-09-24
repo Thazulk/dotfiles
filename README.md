@@ -38,8 +38,6 @@ mise install chezmoi
 chezmoi init --apply https://github.com/Thazulk/dotfiles.git
 ```
 
-`chezmoi apply` only writes configuration files. It never installs packages or rewrites assistant configuration.
-
 ### 3. Install runtimes and CLIs
 
 Neovim needs an external mise plugin once per machine:
@@ -53,7 +51,7 @@ mise install
 
 ### 4. Bootstrap the AI toolstack
 
-This step is deliberately manual, because it downloads packages and edits assistant configuration:
+Not run by `chezmoi apply`; it downloads packages and edits assistant configuration:
 
 ```bash
 bootstrap-ai-toolstack
@@ -109,8 +107,6 @@ chezmoi edit ~/.zshrc   # edit through the source state
 chezmoi re-add ~/.foo   # pull a locally changed file back into the repo
 ```
 
-`chezmoi re-add` overwrites the repo with the file on disk. Run `chezmoi diff` first — if the repo side is the newer one, re-add discards it.
-
 After changing tracked agent defaults:
 
 ```bash
@@ -119,8 +115,6 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 ```
 
 ## Tools
-
-Every entry below is here because something in this repo configures it or depends on it.
 
 ### Dotfile management
 
@@ -209,10 +203,3 @@ Every entry below is here because something in this repo configures it or depend
 | `headroom-ai` | Context/headroom accounting |
 | `fff` | Optional fast, frecency-ranked file finder |
 | `clockify` | Optional time tracking; needs `CLOCKIFY_API_KEY` |
-
-## Notes
-
-- Secrets, tokens, and machine-local auth files are never committed.
-- `bootstrap-ai-toolstack` is safe to rerun.
-- Project-scoped indexes (Repowise, CodeGraph, codebase-memory) are opt-in per repo.
-- `tests/` is ignored by chezmoi and stays in the repo only.
