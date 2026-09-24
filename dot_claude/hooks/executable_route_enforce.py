@@ -2,7 +2,9 @@
 """Stop-hook half of the routing gate: enforce + record the `route:` decision.
 
 Pairs with route-gate.sh (UserPromptSubmit). The gate logs a `matched` event and
-demands a route line; this checks the turn actually produced one.
+demands a route line; this checks the turn actually produced one. Runs as a Stop
+hook in both Claude Code and Codex: both send session_id/transcript_path, both
+honour {"decision": "block", "reason": ...}.
 
 ponytail: nudges at most once per matched prompt. Never blocks twice, so a
 ponytail: misfire costs one extra turn, not a stuck session.
@@ -11,7 +13,7 @@ import json, os, re, sys, time, pathlib
 
 LOG = pathlib.Path(os.environ.get("ROUTE_LOG", os.path.expanduser("~/.claude/route-log.jsonl")))
 TMP = pathlib.Path(os.environ.get("TMPDIR", "/tmp"))
-ROUTE_RE = re.compile(r"^\s*route:\s*(solo|codex|gemini|ollama)\b[ \t]*(?:reason=(.*))?$",
+ROUTE_RE = re.compile(r"^\s*route:\s*(solo|codex|claude|gemini|ollama)\b[ \t]*(?:reason=(.*))?$",
                       re.IGNORECASE | re.MULTILINE)
 
 
@@ -74,6 +76,22 @@ def last_turn_text(path):
             d = json.loads(line)
         except ValueError:
             continue
+        if not isinstance(d, dict):
+            continue
+        # Codex rollout: event_msg/user_message opens the turn; assistant text is
+        # a response_item message with output_text parts.
+        payload = d.get("payload")
+        if isinstance(payload, dict):
+            if d.get("type") == "event_msg" and payload.get("type") == "user_message":
+                seen_user = True
+                break
+            if (d.get("type") == "response_item" and payload.get("type") == "message"
+                    and payload.get("role") == "assistant"
+                    and isinstance(payload.get("content"), list)):
+                for c in payload["content"]:
+                    if isinstance(c, dict) and c.get("type") == "output_text":
+                        out.append(c.get("text", ""))
+            continue
         m = d.get("message")
         if not isinstance(m, dict):
             continue
@@ -103,6 +121,9 @@ def main():
         return 0
 
     text = last_turn_text(inp.get("transcript_path") or "")
+    last = inp.get("last_assistant_message")
+    if isinstance(last, str) and last:
+        text = last if text is None else text + "\n" + last
     if text is None:
         # No transcript to inspect — record and stay out of the way.
         log(session=session, event="missing_route", note="transcript unavailable")
@@ -126,7 +147,7 @@ def main():
     json.dump({
         "decision": "block",
         "reason": ("Routing gate: this turn matched a delegatable prompt but emitted no routing "
-                   "decision. Add the line `route: <solo|codex|gemini|ollama> reason=<short>` "
+                   "decision. Add the line `route: <solo|codex|claude|gemini|ollama> reason=<short>` "
                    "and act on it. `solo` is fine when justified — state the reason. "
                    "This nudge fires once; it will not repeat."),
     }, sys.stdout)

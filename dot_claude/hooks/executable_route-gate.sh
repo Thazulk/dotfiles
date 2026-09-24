@@ -44,5 +44,18 @@ print(json.dumps({'ts':time.strftime('%Y-%m-%dT%H:%M:%SZ',time.gmtime()),
 # Clear any stale enforcement marker from the previous turn in this session.
 rm -f "${TMPDIR:-/tmp}/route-gate-nudged-$sid" 2>/dev/null
 
-jq -n '{hookSpecificOutput:{hookEventName:"UserPromptSubmit",additionalContext:
-"ROUTING GATE — this prompt matched a delegatable shape. You MUST emit a routing decision line before doing the work. Not a suggestion: no route line, no work.\n\nFormat, verbatim, on its own line:\n  route: <solo|codex|gemini|ollama> reason=<short reason>\n\nPick from ~/.claude/CLAUDE.md (Cross-Agent Routing + Quota Routing):\n- codex → fast execution, small diffs, mechanical fixes, focused implementation, second-pass review of your own patch\n- gemini → cross-repo discovery, large-context reads, architecture comparison, migration inventory, docs/test scaffolds, \"where does this concept appear\"\n- ollama → cheap sanity check, bulk mechanical pass, doc drafts, summarizing noisy evidence (free, no quota; low-trust — verify locally)\n- solo → tiny edits, tightly sequential work, same-file edits, secret/security reasoning, anything a local command answers faster, or delegation overhead > 5 min\n\n`solo` is a legitimate and often correct choice — but it must be stated with its reason, not defaulted into. Use `agent-route <cheap|code|hard|long>` if the pick is not obvious, `agent-quota` before a long paid run.\n\nAfter delegating, treat the peer answer as advice: verify with a local command before acting on it. When you route a review, hand over the diff WITHOUT saying who wrote it — anonymity is what makes the second opinion worth having."}}'
+# python3, not jq: same missing-dependency reasoning as read_json above.
+# Output shape is shared by Claude Code and Codex UserPromptSubmit hooks.
+python3 -c '
+import json
+print(json.dumps({"hookSpecificOutput": {"hookEventName": "UserPromptSubmit", "additionalContext":
+"ROUTING GATE — this prompt matched a delegatable shape. You MUST emit a routing decision line before doing the work. Not a suggestion: no route line, no work.\n\n"
+"Format, verbatim, on its own line:\n  route: <solo|codex|claude|gemini|ollama> reason=<short reason>\n\n"
+"Pick per the global agent policy (~/.claude/CLAUDE.md or ~/.codex/AGENTS.md, section Execution and peer advice):\n"
+"- codex → fast execution, small diffs, mechanical fixes, focused implementation (agent-ask-codex)\n"
+"- claude → planning or fresh review of broad or multi-file work (agent-ask-claude)\n"
+"- gemini → cross-repo discovery, large-context reads, architecture comparison, docs/test scaffolds (agent-ask-gemini; only when configured)\n"
+"- ollama → cheap sanity check, bulk mechanical pass, summarizing noisy evidence (free, low-trust; only when installed)\n"
+"- solo → tiny edits, tightly sequential work, secret/security reasoning, anything a local command answers faster, or delegation overhead > 5 min. Never delegate to the agent you already are.\n\n"
+"`solo` is a legitimate and often correct choice — but it must be stated with its reason, not defaulted into. Use `agent-route <cheap|code|hard|long|orchestrate>` if the pick is not obvious, `agent-quota` before a long paid run.\n\n"
+"After delegating, treat the peer answer as advice: verify with a local command before acting on it. When you route a review, hand over the diff WITHOUT saying who wrote it — anonymity is what makes the second opinion worth having."}}))'

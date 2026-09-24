@@ -1,0 +1,62 @@
+#!/usr/bin/env python3
+"""Register the shared agent-routing hooks in Codex's ~/.codex/hooks.json.
+
+Claude Code gets the same hooks declaratively from dot_claude/private_settings.json.tmpl.
+Codex's hooks.json is also written by other installers (herdr, plugins), so it is
+merged in place: only entries whose command runs one of our hook scripts are replaced.
+"""
+import json
+import os
+from pathlib import Path
+import sys
+import tempfile
+
+HOOK_DIR = "$HOME/.claude/hooks"
+# event -> (matcher, script, timeout). Code-discovery augment stays Claude-only:
+# it reads Claude Grep/Glob tool input, which Codex never sends.
+HOOKS = {
+    "SessionStart": (None, "cbm-session-reminder", 10),
+    "UserPromptSubmit": (None, "route-gate.sh", 10),
+    "Stop": (None, "route-enforce.sh", 15),
+}
+
+
+def command(script):
+    return f'if [ -f "{HOOK_DIR}/{script}" ]; then bash "{HOOK_DIR}/{script}"; fi'
+
+
+def ours(group):
+    return any(f"{HOOK_DIR}/{script}" in hook.get("command", "")
+               for hook in group.get("hooks", []) for _, script, _ in HOOKS.values())
+
+
+def merge(data):
+    events = data.setdefault("hooks", {})
+    for event, (matcher, script, timeout) in HOOKS.items():
+        groups = [g for g in events.get(event, []) if not ours(g)]
+        group = {"hooks": [{"type": "command", "command": command(script), "timeout": timeout}]}
+        if matcher:
+            group["matcher"] = matcher
+        events[event] = groups + [group]
+    return data
+
+
+def main():
+    path = Path(os.environ.get("CODEX_HOME", str(Path.home() / ".codex"))) / "hooks.json"
+    source = path.read_text() if path.exists() else ""
+    data = json.loads(source) if source.strip() else {}
+    result = json.dumps(merge(data), indent=2) + "\n"
+    if source and json.loads(source) == json.loads(result):
+        print("ok: Codex hooks")
+        return 0
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with tempfile.NamedTemporaryFile(mode="w", dir=path.parent, delete=False) as output:
+        output.write(result)
+    os.chmod(output.name, 0o600)
+    os.replace(output.name, path)
+    print("updated: Codex hooks (review and trust them once in Codex with /hooks)")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

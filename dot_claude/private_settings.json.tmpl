@@ -37,6 +37,16 @@
             "timeout": 10
           }
         ]
+      },
+      {
+        "matcher": "startup|resume|clear|compact",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$HOME/.claude/hooks/cbm-session-reminder\" ]; then bash \"$HOME/.claude/hooks/cbm-session-reminder\"; fi",
+            "timeout": 10
+          }
+        ]
       }
     ],
     "PreToolUse": [
@@ -57,6 +67,38 @@
             "command": "repowise-rewrite",
             "timeout": 5,
             "statusMessage": "Distilling command output..."
+          }
+        ]
+      },
+      {
+        "matcher": "Grep|Glob",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$HOME/.claude/hooks/cbm-code-discovery-gate\" ]; then bash \"$HOME/.claude/hooks/cbm-code-discovery-gate\"; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$HOME/.claude/hooks/route-gate.sh\" ]; then bash \"$HOME/.claude/hooks/route-gate.sh\"; fi",
+            "timeout": 10
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if [ -f \"$HOME/.claude/hooks/route-enforce.sh\" ]; then bash \"$HOME/.claude/hooks/route-enforce.sh\"; fi",
+            "timeout": 15
           }
         ]
       }

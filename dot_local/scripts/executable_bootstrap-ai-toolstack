@@ -20,34 +20,50 @@ run() {
     return 1
 }
 
+# Claude Desktop starts its shared MCP pool without a project directory (cwd /),
+# so servers that index or write into the current project exit immediately there
+# ("Couldn't start for Cowork and Code sessions"). Keep them CLI-only.
+DESKTOP_SKIP_MCP="codegraph fff nx-mcp repowise"
+
 add_claude_desktop_mcp() {
     [[ "$(uname -s 2>/dev/null || true)" == "Darwin" ]] || return 0
     local config_dir="$HOME/Library/Application Support/Claude"
     [[ -d "$config_dir" ]] || return 0
-    local name="$1" command="$2"
+    local name="$1" command="$2" skip=0
     shift 2
-    python3 - "$config_dir/claude_desktop_config.json" "$name" "$command" "$@" <<'PY'
+    [[ " $DESKTOP_SKIP_MCP " == *" $name "* ]] && skip=1
+    python3 - "$config_dir/claude_desktop_config.json" "$skip" "$name" "$command" "$@" <<'PY'
 import json
 import sys
 from pathlib import Path
 
 path = Path(sys.argv[1])
-name = sys.argv[2]
-command = sys.argv[3]
-args = sys.argv[4:]
+skip = sys.argv[2] == "1"
+name = sys.argv[3]
+command = sys.argv[4]
+args = sys.argv[5:]
 data = json.loads(path.read_text()) if path.exists() and path.read_text().strip() else {}
 servers = data.setdefault("mcpServers", {})
 wanted = {"command": command}
 if args:
     wanted["args"] = args
-if servers.get(name) == wanted:
+if skip:
+    if name not in servers:
+        sys.exit(0)
+    del servers[name]
+elif servers.get(name) == wanted:
     sys.exit(0)
-servers[name] = wanted
+else:
+    servers[name] = wanted
 path.parent.mkdir(parents=True, exist_ok=True)
 path.write_text(json.dumps(data, indent=2) + "\n")
 path.chmod(0o600)
-print(f"ok: Claude Desktop MCP {name}")
+print(f"{'removed project-scoped' if skip else 'ok:'} Claude Desktop MCP {name}")
 PY
+    if [[ "$desktop_warned" == 0 ]] && pgrep -xq Claude; then
+        desktop_warned=1
+        say "WARNING: Claude Desktop is running and rewrites claude_desktop_config.json from memory; quit it and rerun to keep Desktop MCP changes" >&2
+    fi
 }
 
 add_mcp() {
@@ -158,6 +174,7 @@ install_agent_plugins() {
     fi
 }
 
+desktop_warned=0
 mcp_tmp="$(mktemp)"
 trap 'rm -f "$mcp_tmp"' EXIT
 
@@ -177,6 +194,7 @@ export PATH="$HOME/.local/bin:$PATH"
 
 if have codex; then
     run python3 "$(dirname "$0")/configure-agent-defaults"
+    run python3 "$(dirname "$0")/configure-agent-hooks"
 fi
 install_agent_plugins
 have context7-mcp && add_mcp context7 "$(mise which context7-mcp --tool npm:@upstash/context7-mcp)"

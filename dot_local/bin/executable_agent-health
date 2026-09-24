@@ -41,7 +41,11 @@ NPM_CONFIG_CACHE=/private/tmp/codex-npm-cache run_with_timeout 60 npx -y github:
 
 echo
 echo "== gemini api =="
-run_with_timeout 20 agent-ask-gemini 'Reply exactly: ok' || echo "(timeout/failed)"
+if agent-route long 2>/dev/null | grep -q "gemini API key not configured"; then
+  echo "(skip: gemini API key not configured)"
+else
+  run_with_timeout 20 agent-ask-gemini 'Reply exactly: ok' || echo "(timeout/failed)"
+fi
 
 echo
 echo "== claude mcp =="
@@ -50,4 +54,12 @@ echo "(note: Claude live sessions may still call Codex even if this CLI health s
 
 echo
 echo "== gemini mcp =="
-run_with_timeout 30 gemini mcp list || echo "(timeout/failed)"
+if (( $+commands[gemini] )); then
+  run_with_timeout 30 gemini mcp list || echo "(timeout/failed)"
+else
+  echo "(skip: gemini CLI not installed)"
+fi
+
+echo
+echo "== hooks =="
+check-ai-toolstack 2>/dev/null | grep -E '(ok|missing) +(claude|codex)-hook-' || echo "(check-ai-toolstack unavailable)"

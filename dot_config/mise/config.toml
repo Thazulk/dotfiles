@@ -10,7 +10,6 @@ bat = "latest"
 fzf = "latest"
 fd = "latest"
 usage = "latest"
-tmux = "latest"
 github-cli = "latest"
 java = "temurin-17"
 zig = "latest"
@@ -38,6 +37,7 @@ rtk = "0.44.1"
 "pipx:ddgs" = { version = "9.14.4", extras = "mcp", uvx_args = "--python 3.13 --with mcp<2", pipx_args = "--python 3.13 --pip-args='mcp<2'" }
 "pipx:repowise" = { version = "0.31.0", uvx_args = "--python 3.13", pipx_args = "--python 3.13" }
 "pipx:headroom-ai" = { version = "0.31.0", extras = "all", uvx_args = "--python 3.13", pipx_args = "--python 3.13" }
+"npm:nx" = "latest"
 
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]

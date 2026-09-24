@@ -107,11 +107,54 @@ with tempfile.TemporaryDirectory() as directory:
     native.chmod(0o755)
     assert subprocess.check_output(launcher, env=env, text=True).strip() == "--version"
 
-for file in ["executable_agent-route", "executable_agent-quota", "executable_matrix-evidence"]:
+for file in ["executable_agent-route", "executable_agent-quota", "executable_matrix-evidence", "../scripts/executable_configure-agent-hooks"]:
     subprocess.run(["python3", "-m", "py_compile", str(repo / "dot_local/bin" / file)], check=True)
 subprocess.run(["python3", "-m", "py_compile", str(repo / "dot_claude/hooks/executable_route_enforce.py")], check=True)
 for file in ["executable_agent-ask-codex", "executable_agent-ask-claude", "executable_agent-ask-gemini", "executable_agent-health"]:
     subprocess.run(["zsh", "-n", str(repo / "dot_local/bin" / file)], check=True)
 for file in ["executable_route-gate.sh", "executable_route-enforce.sh", "executable_cbm-code-discovery-gate", "executable_cbm-session-reminder"]:
     subprocess.run(["bash", "-n", str(repo / "dot_claude/hooks" / file)], check=True)
+
+# Hooks must be registered in both clients, not merely deployed.
+settings = json.loads((repo / "dot_claude/private_settings.json.tmpl").read_text())
+claude_hooks = json.dumps(settings["hooks"])
+for event, script in [("UserPromptSubmit", "route-gate.sh"), ("Stop", "route-enforce.sh"),
+                      ("SessionStart", "cbm-session-reminder"), ("PreToolUse", "cbm-code-discovery-gate")]:
+    assert script in json.dumps(settings["hooks"][event]), (event, script)
+configure_hooks = runpy.run_path(str(repo / "dot_local/scripts/executable_configure-agent-hooks"))
+herdr = {"hooks": [{"type": "command", "command": "bash herdr-agent-state.sh session"}]}
+codex_hooks = configure_hooks["merge"]({"hooks": {"SessionStart": [herdr]}})
+assert herdr in codex_hooks["hooks"]["SessionStart"]
+assert configure_hooks["merge"](json.loads(json.dumps(codex_hooks))) == codex_hooks
+for event, script in [("UserPromptSubmit", "route-gate.sh"), ("Stop", "route-enforce.sh"), ("SessionStart", "cbm-session-reminder")]:
+    assert json.dumps(codex_hooks["hooks"][event]).count(script) == 2, (event, script)  # guard + run
+
+# Project-scoped MCP servers must stay out of Claude Desktop's cwd-less shared pool.
+bootstrap = (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert 'DESKTOP_SKIP_MCP="codegraph fff nx-mcp repowise"' in bootstrap
+assert "configure-agent-hooks" in bootstrap
+
+# Route gate emits valid JSON without jq; enforcer accepts Claude and Codex transcripts.
+with tempfile.TemporaryDirectory() as directory:
+    root = Path(directory)
+    env = os.environ | {"ROUTE_LOG": str(root / "route-log.jsonl"), "TMPDIR": directory}
+    gate = subprocess.run(["bash", str(repo / "dot_claude/hooks/executable_route-gate.sh")], env=env, check=True,
+                          input=json.dumps({"prompt": "review this", "session_id": "s1"}), capture_output=True, text=True)
+    assert "route: <solo|codex|claude|gemini|ollama>" in json.loads(gate.stdout)["hookSpecificOutput"]["additionalContext"]
+    enforce = [ "python3", str(repo / "dot_claude/hooks/executable_route_enforce.py")]
+    codex_transcript = root / "rollout.jsonl"
+    codex_transcript.write_text("\n".join(json.dumps(r) for r in [
+        {"type": "event_msg", "payload": {"type": "user_message", "message": "review this"}},
+        {"type": "response_item", "payload": {"type": "message", "role": "assistant",
+         "content": [{"type": "output_text", "text": "route: solo reason=tiny"}]}},
+    ]) + "\n")
+    stop = {"session_id": "s1", "transcript_path": str(codex_transcript), "last_assistant_message": "done"}
+    out = subprocess.run(enforce, env=env, input=json.dumps(stop), capture_output=True, text=True, check=True)
+    assert out.stdout == "" and '"event": "route"' in (root / "route-log.jsonl").read_text()
+    gate = subprocess.run(["bash", str(repo / "dot_claude/hooks/executable_route-gate.sh")], env=env, check=True,
+                          input=json.dumps({"prompt": "review again", "session_id": "s1"}), capture_output=True, text=True)
+    stop = {"session_id": "s1", "transcript_path": None, "last_assistant_message": "no decision here"}
+    out = subprocess.run(enforce, env=env, input=json.dumps(stop), capture_output=True, text=True, check=True)
+    assert json.loads(out.stdout)["decision"] == "block"
+
 print("ok: config preservation/idempotence and agent-routing-toolkit checks")

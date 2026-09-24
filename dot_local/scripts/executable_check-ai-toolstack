@@ -47,6 +47,25 @@ check_file model-matrix "$HOME/.claude/MODEL-MATRIX.md"
 check_file route-gate-hook "$HOME/.claude/hooks/route-gate.sh"
 check_file route-enforce-hook "$HOME/.claude/hooks/route-enforce.sh"
 
+# Hook files alone do nothing; each client must also register them.
+python3 - "$HOME/.claude/settings.json" "${CODEX_HOME:-$HOME/.codex}/hooks.json" <<'PY'
+import json
+import sys
+
+wanted = {
+    "claude": ["route-gate.sh", "route-enforce.sh", "cbm-session-reminder", "cbm-code-discovery-gate"],
+    "codex": ["route-gate.sh", "route-enforce.sh", "cbm-session-reminder"],
+}
+for client, path in zip(wanted, sys.argv[1:]):
+    try:
+        text = json.dumps(json.load(open(path)).get("hooks", {}))
+    except (OSError, ValueError):
+        text = ""
+    for script in wanted[client]:
+        state = "ok     " if f"/.claude/hooks/{script}" in text else "missing"
+        print(f"{state} {client + '-hook-' + script:<22} {path}")
+PY
+
 check_file caveman-skill "$HOME/.agents/skills/caveman/SKILL.md"
 check_file gpt-toolset-skill-codex "$HOME/.codex/skills/gpt-toolset/SKILL.md"
 check_file gpt-toolset-skill-claude "$HOME/.claude/skills/gpt-toolset/SKILL.md"
@@ -76,6 +95,8 @@ servers = json.load(open(sys.argv[1])).get("mcpServers", {})
 for name in sorted(servers):
     server = servers[name]
     print(f"{name}: {server.get('command', '')} {' '.join(server.get('args', []))}".rstrip())
+    if name in {"codegraph", "fff", "nx-mcp", "repowise"}:
+        print(f"  WARNING: {name} needs a project directory and fails in Claude Desktop; rerun bootstrap-ai-toolstack")
 PY
 fi
 
