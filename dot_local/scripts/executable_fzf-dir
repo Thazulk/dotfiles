@@ -9,20 +9,24 @@ if [[ ! -f "$config_file" ]]; then
     exit 1
 fi
 
+# Each config line is a directory path and may contain glob patterns, so the
+# config can reach into per-client or per-employer trees without naming them.
 base_dirs=()
 while IFS= read -r dir || [[ -n "$dir" ]]; do
     [[ -z "$dir" || "$dir" =~ ^[[:space:]]*# ]] && continue
 
     expanded_dir=${dir/#\~/$HOME}
-    base_dirs+=("$expanded_dir")
+    # ${~var} makes the glob in the line expand; (N/) keeps directories only
+    # and drops the pattern when nothing matches.
+    base_dirs+=(${~expanded_dir}(N/))
 done < "$config_file"
 
 all_dirs=()
 for dir in "${base_dirs[@]}"; do
-    [[ -d "$dir" ]] && all_dirs+=("$dir")
+    all_dirs+=("$dir")
 
     for subdir in "$dir"/*(ND/); do
-        [[ -d "$subdir" ]] && all_dirs+=("$subdir")
+        all_dirs+=("$subdir")
     done
 done
 
