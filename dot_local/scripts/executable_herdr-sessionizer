@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 selected=${1:-$("$HOME/.local/scripts/fzf-dir")}
 [[ -z "$selected" ]] && exit 0

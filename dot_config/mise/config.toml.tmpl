@@ -49,7 +49,7 @@ rtk = "0.44.1"
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]
 
-{{- if stat "/usr/share/omarchy" }}
+{{ if stat "/usr/share/omarchy" -}}
 [settings.upgrade]
 auto_prune = false
 

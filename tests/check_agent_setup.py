@@ -18,6 +18,10 @@ manifest_source = (repo / "dot_config/mise/config.toml.tmpl").read_text()
 manifest = tomllib.loads("\n".join(l for l in manifest_source.splitlines() if not l.lstrip().startswith("{{")))
 for tool in ["npm:pnpm", "ast-grep", "rtk", "npm:@upstash/context7-mcp", "npm:codebase-memory-mcp", "npm:@suatkocar/codegraph", "npm:@playwright/mcp", "npm:nx-mcp", "npm:codeburn", "pipx:ddgs", "pipx:repowise", "pipx:headroom-ai"]:
     assert tool in manifest["tools"]
+# Scripts run on Linux/WSL without zsh and on macOS's bash 3.2.
+for script in [*(repo / "dot_local/bin").glob("executable_*"), *(repo / "dot_local/scripts").glob("executable_*")]:
+    first = script.read_text().splitlines()[0]
+    assert "zsh" not in first, f"{script.name} must not require zsh"
 assert manifest["tools"]["pipx:repowise"]["uvx_args"] == "--python 3.13"
 assert "mcp<2" in manifest["tools"]["pipx:ddgs"]["uvx_args"]
 for file in ["executable_bootstrap-ai-toolstack", "executable_bootstrap-ai-toolstack.ps1"]:
@@ -86,12 +90,12 @@ with tempfile.TemporaryDirectory() as directory:
     quota.write_text('#!/bin/sh\nprintf "%s\\n" "codex   : 5h 1%" "claude  : ok" "gemini  : ok"\n')
     quota.chmod(0o755)
     env = os.environ | {"PATH": str(root) + os.pathsep + os.environ["PATH"]}
-    command = ["zsh", str(repo / "dot_local/bin/executable_agent-ask-claude"), str(brief)]
-    response = subprocess.run(command, env=env, capture_output=True, text=True, check=True)
+    command = ["bash", str(repo / "dot_local/bin/executable_agent-ask-claude"), str(brief)]
+    response = subprocess.run(command, env=env, capture_output=True, text=True, check=True, stdin=subprocess.DEVNULL)
     data = json.loads(response.stdout)
     assert brief.read_text() in data["args"]
     assert "-p" in data["args"] and "--permission-mode" in data["args"]
-    assert subprocess.run(["zsh", str(repo / "dot_local/bin/executable_agent-ask-claude")], env=env, capture_output=True).returncode == 2
+    assert subprocess.run(["bash", str(repo / "dot_local/bin/executable_agent-ask-claude")], env=env, capture_output=True, stdin=subprocess.DEVNULL).returncode == 2
     route = ["python3", str(repo / "dot_local/bin/executable_agent-route"), "code"]
     routed = subprocess.run(route, env=env, capture_output=True, text=True, check=True)
     assert "class: code" in routed.stdout and "Codex gpt-5.5" in routed.stdout

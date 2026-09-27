@@ -1,0 +1,89 @@
+# Shared interactive shell setup, sourced by ~/.zshrc (macOS) and ~/.bashrc
+# (Linux, WSL, Omarchy). Keep it POSIX: shell-specific prompts, completion,
+# key bindings and mise activation stay in the rc files.
+
+export VISUAL='nvim'
+export EDITOR='nvim'
+[ -n "$TMUX" ] && export TERM="tmux-256color"
+
+# Sessionizer and AI toolstack scripts
+case ":$PATH:" in
+  *":$HOME/.local/scripts:"*) ;;
+  *) export PATH="$HOME/.local/scripts:$PATH" ;;
+esac
+
+# Git aliases
+alias gst='git status'
+alias gf='git fetch'
+alias gcan!='git commit -v -a --no-edit --amend'
+alias gpl='git pull'
+alias gaa='git add .'
+alias gcm='git commit -m'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gbr='git branch'
+alias gsw='git switch'
+alias gswc='git switch -c'
+# git stash push with a timestamp as message
+alias gsp='git stash push -u -m "$(date +%Y-%m-%d_%H-%M-%S)"'
+alias gsa='git stash apply'
+alias gsl='git stash list'
+alias gsd='git stash drop'
+alias gpop='git stash pop'
+
+# finds all files recursively and sorts by last modification, ignore hidden files
+alias lastmod='find . -type f -not -path "*/\.*" -exec ls -lrt {} +'
+{{- if eq .chezmoi.os "linux" }}
+
+# yay
+alias yu="yay -Syu"
+{{- end }}
+
+# docker
+alias fe-up="docker compose -f docker-compose-dev.yml up"
+alias vimbegood="docker run -it brandoncc/vim-be-good:latest"
+
+# Neovim
+alias v="nvim ."
+alias sv="sudo nvim "
+
+# Kubectl
+alias k="kubectl"
+
+# Tmux
+alias tks="tmux kill-server"
+{{- if eq .chezmoi.os "darwin" }}
+
+# Android Studio (macOS)
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/emulator
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+export JAVA_HOME=/Library/Java/JavaVirtualMachines/zulu-17.jdk/Contents/Home
+{{- end }}
+
+# Go configuration - dynamic solution for cross-platform compatibility
+if command -v go >/dev/null 2>&1; then
+  export GOPATH="${GOPATH:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")}"
+  [ -d "$GOPATH/bin" ] && export PATH="$GOPATH/bin:$PATH"
+elif [ -d "$HOME/go" ]; then
+  export GOPATH="$HOME/go"
+  [ -d "$GOPATH/bin" ] && export PATH="$GOPATH/bin:$PATH"
+  for possible_goroot in /usr/local/go /usr/lib/go /opt/go; do
+    if [ -x "$possible_goroot/bin/go" ]; then
+      export GOROOT="$possible_goroot"
+      export PATH="$GOROOT/bin:$PATH"
+      break
+    fi
+  done
+fi
+
+# Optional per-machine tools, loaded only when installed
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && . "$NVM_DIR/nvm.sh"
+# Generated for envman. Do not edit.
+[ -s "$HOME/.config/envman/load.sh" ] && . "$HOME/.config/envman/load.sh"
+if [ -d "$HOME/.local/share/fnm" ]; then
+  export PATH="$HOME/.local/share/fnm:$PATH"
+  eval "$(fnm env)"
+fi
+[ -d "$HOME/.rd/bin" ] && export PATH="$HOME/.rd/bin:$PATH"

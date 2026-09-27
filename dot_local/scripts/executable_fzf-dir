@@ -1,13 +1,16 @@
-#!/usr/bin/env zsh
-
-setopt EXTENDED_GLOB
-setopt NULL_GLOB
+#!/usr/bin/env bash
+# Kept compatible with macOS's bash 3.2: no mapfile, no associative arrays.
 
 config_file="$HOME/.local/scripts/sessionizer-paths.conf"
 if [[ ! -f "$config_file" ]]; then
     echo "Config file not found at $config_file" >&2
     exit 1
 fi
+
+# Unmatched globs expand to nothing, and only newlines split words, so a
+# config line with spaces stays one path.
+shopt -s nullglob
+IFS=$'\n'
 
 # Each config line is a directory path and may contain glob patterns, so the
 # config can reach into per-client or per-employer trees without naming them.
@@ -16,17 +19,18 @@ while IFS= read -r dir || [[ -n "$dir" ]]; do
     [[ -z "$dir" || "$dir" =~ ^[[:space:]]*# ]] && continue
 
     expanded_dir=${dir/#\~/$HOME}
-    # ${~var} makes the glob in the line expand; (N/) keeps directories only
-    # and drops the pattern when nothing matches.
-    base_dirs+=(${~expanded_dir}(N/))
+    # Unquoted on purpose: this expands the glob in the line.
+    for match in $expanded_dir; do
+        [[ -d "$match" ]] && base_dirs+=("$match")
+    done
 done < "$config_file"
 
 all_dirs=()
 for dir in "${base_dirs[@]}"; do
     all_dirs+=("$dir")
 
-    for subdir in "$dir"/*(ND/); do
-        all_dirs+=("$subdir")
+    for subdir in "$dir"/*/; do
+        all_dirs+=("${subdir%/}")
     done
 done
 

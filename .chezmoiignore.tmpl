@@ -1,5 +1,11 @@
 {{ if ne .chezmoi.os "darwin" }}
 Library/**
+# zsh is the macOS shell; Linux and WSL use bash with the same
+# ~/.config/shell/common.sh, and no script requires zsh.
+.zshrc
+.zprofile
+.zsh
+.zsh/**
 {{ end }}
 
 {{ if ne .chezmoi.os "windows" }}

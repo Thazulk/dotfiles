@@ -1,8 +1,13 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 
 target=$1
 selected=$("$HOME/.local/scripts/fzf-dir") || exit 0
 
 [[ -z "$selected" ]] && exit 0
 
-tmux send-keys ${target:+-t "$target"} "cd ${(q)selected}" C-m
+printf -v quoted '%q' "$selected"
+if [[ -n "$target" ]]; then
+    tmux send-keys -t "$target" "cd $quoted" C-m
+else
+    tmux send-keys "cd $quoted" C-m
+fi

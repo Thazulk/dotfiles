@@ -1,9 +1,12 @@
-{{- if stat "/usr/share/omarchy" -}}
-# ~/.bashrc on Omarchy: Omarchy's defaults first, then the parts of the dotfiles
-# .zshrc that Omarchy does not already provide (bash is Omarchy's shell).
+{{- $omarchy := stat "/usr/share/omarchy" -}}
+# ~/.bashrc - Linux and WSL{{ if $omarchy }} (Omarchy){{ end }}. Aliases, editor, PATH and Go
+# setup shared with zsh live in ~/.config/shell/common.sh; this file keeps only
+# what is bash-specific.
+{{- if $omarchy }}
 
 # Omarchy environment (OMARCHY_PATH + PATH), needed even for non-interactive shells
 [[ -r /usr/share/omarchy/default/bash/env-bootstrap ]] && source /usr/share/omarchy/default/bash/env-bootstrap
+{{- end }}
 
 # Sessionizer and AI toolstack scripts; also needed by agents' non-interactive shells
 case ":$PATH:" in
@@ -11,70 +14,55 @@ case ":$PATH:" in
   *) export PATH="$HOME/.local/scripts:$PATH" ;;
 esac
 
-# If not running interactively, don't do anything else (leave this above the rc source)
+# If not running interactively, don't do anything else
 [[ $- != *i* ]] && return
+{{- if $omarchy }}
 
-# All the default Omarchy aliases and functions (mise, starship, zoxide, fzf)
+# All the default Omarchy aliases and functions (mise, starship, zoxide, fzf).
+# They load first; the dotfiles below win where both define the same name.
 source "$OMARCHY_PATH/default/bash/rc"
+{{- else }}
 
-# --- dotfiles ---------------------------------------------------------------
+alias ls='ls --color=auto'
+alias grep='grep --color=auto'
+PS1='[\u@\h \W]\$ '
 
-HISTSIZE=100000
-HISTFILESIZE=100000
-# Share history between sessions, as zsh SHARE_HISTORY did.
-PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
-
-export VISUAL='nvim'
-export EDITOR='nvim'
-[[ -n "$TMUX" ]] && export TERM="tmux-256color"
-
-if command -v go >/dev/null 2>&1; then
-  export GOPATH="${GOPATH:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")}"
-  [[ -d "$GOPATH/bin" ]] && export PATH="$GOPATH/bin:$PATH"
+if command -v mise >/dev/null 2>&1; then
+  eval "$(mise activate bash)"
 fi
 
-# Git aliases
-alias gst='git status'
-alias gf='git fetch'
-alias gcan!='git commit -v -a --no-edit --amend'
-alias gpl='git pull'
-alias gaa='git add .'
-alias gcm='git commit -m'
-alias gco='git checkout'
-alias gcb='git checkout -b'
-alias gbr='git branch'
-alias gsw='git switch'
-alias gswc='git switch -c'
-alias gsp='git stash push -u -m "$(date +%Y-%m-%d_%H-%M-%S)"'
-alias gsa='git stash apply'
-alias gsl='git stash list'
-alias gsd='git stash drop'
-alias gpop='git stash pop'
+for fzf_bindings in /usr/share/fzf/key-bindings.bash /usr/share/doc/fzf/examples/key-bindings.bash; do
+  [[ -r "$fzf_bindings" ]] && source "$fzf_bindings" && break
+done
+unset fzf_bindings
+{{- end }}
 
-# finds all files recursively and sorts by last modification, ignore hidden files
-alias lastmod='find . -type f -not -path "*/\.*" -exec ls -lrt {} +'
+source "$HOME/.config/shell/common.sh"
+
+shopt -s histappend
+HISTCONTROL=ignoreboth
+HISTSIZE=100000
+HISTFILESIZE=100000
+# Share history between sessions, as zsh SHARE_HISTORY does.
+PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+
 alias reload='source ~/.bashrc'
-alias yu="yay -Syu"
-
-alias fe-up="docker compose -f docker-compose-dev.yml up"
-alias vimbegood="docker run -it brandoncc/vim-be-good:latest"
-
-alias v="nvim ."
-alias sv="sudo nvim "
-alias k="kubectl"
-alias tks="tmux kill-server"
+[[ -s "$NVM_DIR/bash_completion" ]] && source "$NVM_DIR/bash_completion"
 
 if command -v kubectl >/dev/null 2>&1; then
   source <(kubectl completion bash)
   complete -o default -F __start_kubectl k
 fi
 
-# Vi mode. Omarchy's inputrc was bound to the emacs keymap, so re-apply it to
-# the vi keymaps to keep prefix history search on the arrows and Tab cycling.
+# Vi mode
 set -o vi
+{{- if $omarchy }}
+# Omarchy's inputrc was bound to the emacs keymap, so re-apply it to the vi
+# keymaps to keep prefix history search on the arrows and Tab cycling.
 bind -m vi-insert -f "$OMARCHY_PATH/default/bash/inputrc"
 bind -m vi-command '"\e[A": history-search-backward'
 bind -m vi-command '"\e[B": history-search-forward'
+{{- end }}
 
 fzf_cd_widget() {
   local selected
@@ -89,25 +77,3 @@ bind -m vi-insert '"\C-t": "tmux-sessionizer\n"'
 bind -m vi-insert '"\C-h": "herdr-sessionizer\n"'
 # alt+f: VS Code sessionizer
 bind -m vi-insert '"\ef": "vscode-sessionizer\n"'
-{{- else -}}
-# ~/.bashrc
-
-# If not running interactively, don't do anything
-[[ $- != *i* ]] && return
-
-alias ls='ls --color=auto'
-alias grep='grep --color=auto'
-PS1='[\u@\h \W]\$ '
-
-# Generated for envman. Do not edit.
-[ -s "$HOME/.config/envman/load.sh" ] && source "$HOME/.config/envman/load.sh"
-
-# mise: version-managed tools (go, node, python, …)
-if command -v mise >/dev/null 2>&1; then
-  eval "$(mise activate bash)"
-  if command -v go >/dev/null 2>&1; then
-    export GOPATH="${GOPATH:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")}"
-    [[ -d "$GOPATH/bin" ]] && export PATH="$GOPATH/bin:$PATH"
-  fi
-fi
-{{- end }}

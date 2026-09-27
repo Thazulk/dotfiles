@@ -12,7 +12,7 @@ Targets macOS and Linux/WSL. Native Windows is best-effort (PowerShell profiles 
 | --- | --- |
 | All | `git`, `curl` |
 | macOS | Xcode Command Line Tools: `xcode-select --install` |
-| Debian/Ubuntu/WSL | `build-essential`, `unzip`, `zsh`, `tmux`, `xclip` |
+| Debian/Ubuntu/WSL | `build-essential`, `unzip`, `tmux`, `xclip` |
 | Windows | WSL2 recommended; native setup covers PowerShell profiles only |
 
 `tmux` is not managed by mise here — install it from your system package manager (`brew install tmux`, `apt install tmux`).
@@ -102,13 +102,11 @@ On [Omarchy](https://omarchy.org/) (detected by `/usr/share/omarchy`), the templ
 | Area | Behaviour on Omarchy |
 | --- | --- |
 | `hypr`, `waybar`, `mako`, `ghostty`, `environment.d` | Not applied; Omarchy owns the desktop session and terminal theme |
-| `~/.bashrc` | Omarchy's rc is sourced first, then the `.zshrc` aliases, vi mode, sessionizer keys, and `~/.local/scripts` on `PATH` |
+| `~/.bashrc` | Omarchy's rc is sourced first, then `~/.config/shell/common.sh` and the bash key bindings; Omarchy's inputrc is kept in vi mode |
 | git | Omarchy keeps `~/.config/git/config`; the delta and merge settings go to `~/.gitconfig`, which git reads as well |
 | tmux | `~/.tmux.conf` holds only the bindings Omarchy does not define; Omarchy's `~/.config/tmux/tmux.conf` loads after it |
 | herdr | Merged into Omarchy's `config.toml` by a `modify_` script; keys Omarchy already sets are left alone |
 | mise | Adds `claude`, `codex` and `gemini`, which Omarchy's `~/.local/bin` wrappers pin with `mise use -g` |
-
-Omarchy uses bash, so `.zshrc` is installed but only matters if you switch shells.
 
 ## Daily use
 
@@ -140,7 +138,9 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 
 | Tool | Why it is here |
 | --- | --- |
-| `zsh` + Pure prompt | Main shell: aliases, vi mode, completion, autosuggestions |
+| `~/.config/shell/common.sh` | Aliases, editor, `PATH` and Go setup shared by both shells |
+| `zsh` + Pure prompt | macOS shell: vi mode, completion, fzf-tab, sessionizer keys |
+| `bash` | Linux and WSL shell (Omarchy's default): vi mode and the same sessionizer keys |
 | `tmux` | Terminal workspace, TokyoNight theme, project sessions |
 | `fzf-dir` | Shared project picker used by all sessionizer scripts |
 | `tmux-sessionizer` | `Ctrl-t`: jump to a tmux session for any project |

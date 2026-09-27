@@ -1,4 +1,4 @@
-#!/usr/bin/env zsh
+#!/usr/bin/env bash
 set -u
 
 run_with_timeout() {
@@ -37,7 +37,7 @@ run_with_timeout 60 agent-ask-codex 'Reply exactly: ok' || echo "(timeout/failed
 
 echo
 echo "== shared memory =="
-NPM_CONFIG_CACHE=/private/tmp/codex-npm-cache run_with_timeout 60 npx -y github:dan-calin/shared-agent-memory status || echo "(timeout/failed)"
+NPM_CONFIG_CACHE="${TMPDIR:-/tmp}/codex-npm-cache" run_with_timeout 60 npx -y github:dan-calin/shared-agent-memory status || echo "(timeout/failed)"
 
 echo
 echo "== gemini api =="
@@ -54,7 +54,7 @@ echo "(note: Claude live sessions may still call Codex even if this CLI health s
 
 echo
 echo "== gemini mcp =="
-if (( $+commands[gemini] )); then
+if command -v gemini >/dev/null 2>&1; then
   run_with_timeout 30 gemini mcp list || echo "(timeout/failed)"
 else
   echo "(skip: gemini CLI not installed)"
