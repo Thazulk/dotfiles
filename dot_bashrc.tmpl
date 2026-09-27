@@ -75,3 +75,9 @@ bind -m vi-insert -x '"\C-f": fzf_cd_widget'
 bind -m vi-insert '"\C-h": "herdr-sessionizer\n"'
 # alt+f: VS Code sessionizer
 bind -m vi-insert '"\ef": "vscode-sessionizer\n"'
+
+# Use the systemd user ssh-agent when its socket exists, so a key passphrase
+# is entered once per session (keys are added on first use via AddKeysToAgent).
+if [[ -z "$SSH_AUTH_SOCK" && -S "$XDG_RUNTIME_DIR/ssh-agent.socket" ]]; then
+  export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
+fi
