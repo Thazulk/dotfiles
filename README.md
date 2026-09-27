@@ -101,12 +101,28 @@ On [Omarchy](https://omarchy.org/) (detected by `/usr/share/omarchy`), the templ
 
 | Area | Behaviour on Omarchy |
 | --- | --- |
-| `hypr`, `waybar`, `mako`, `ghostty`, `environment.d` | Not applied; Omarchy owns the desktop session and terminal theme |
+| Desktop, terminal, theme | Omarchy's; only the files listed under *Omarchy customizations* are tracked |
 | `~/.bashrc` | Omarchy's rc is sourced first, then `~/.config/shell/common.sh` and the bash key bindings; Omarchy's inputrc is kept in vi mode |
 | git | Omarchy keeps `~/.config/git/config`; the delta and merge settings go to `~/.gitconfig`, which git reads as well |
 | tmux | `~/.tmux.conf` holds only the bindings Omarchy does not define; Omarchy's `~/.config/tmux/tmux.conf` loads after it |
 | herdr | Merged into Omarchy's `config.toml` by a `modify_` script; keys Omarchy already sets are left alone |
 | mise | Adds `claude`, `codex` and `gemini`, which Omarchy's `~/.local/bin` wrappers pin with `mise use -g` |
+
+### Omarchy customizations
+
+Only Omarchy files that differ from its defaults are tracked, so Omarchy
+updates and migrations keep improving everything else. They apply on Omarchy
+only.
+
+| File | Notes |
+| --- | --- |
+| `~/.config/hypr/monitors.lua` | Per host: `.chezmoitemplates/monitors/<hostname>.lua`; hosts without one keep Omarchy's generated file |
+| `~/.config/omarchy/defaults/agent` | Default agent for Omarchy's agent menu |
+
+After customizing another Omarchy file (for example `~/.config/hypr/bindings.lua`
+or `~/.config/omarchy/shell.json`), record it with `chezmoi add <file>`. To
+record a monitor layout for a new machine, copy its `monitors.lua` to
+`.chezmoitemplates/monitors/$(hostname).lua`.
 
 ## Daily use
 
@@ -156,9 +172,7 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | --- | --- |
 | `nvim` / LazyVim | Main editor; plugin set pinned by `lazy-lock.json` |
 | `lazygit` | Terminal git UI, themed to match |
-| `ghostty` | Terminal emulator config |
 | `superfile`, `mc` | File managers |
-| `hypr`, `waybar`, `mako` | Wayland desktop config on Linux |
 
 ### CLI utilities
 

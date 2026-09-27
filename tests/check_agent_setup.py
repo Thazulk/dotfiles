@@ -117,7 +117,7 @@ for file in ["executable_agent-route", "executable_agent-quota", "executable_mat
     subprocess.run(["python3", "-m", "py_compile", str(repo / "dot_local/bin" / file)], check=True)
 subprocess.run(["python3", "-m", "py_compile", str(repo / "dot_claude/hooks/executable_route_enforce.py")], check=True)
 for file in ["executable_agent-ask-codex", "executable_agent-ask-claude", "executable_agent-ask-gemini", "executable_agent-health"]:
-    subprocess.run(["zsh", "-n", str(repo / "dot_local/bin" / file)], check=True)
+    subprocess.run(["bash", "-n", str(repo / "dot_local/bin" / file)], check=True)
 for file in ["executable_route-gate.sh", "executable_route-enforce.sh", "executable_cbm-code-discovery-gate", "executable_cbm-session-reminder"]:
     subprocess.run(["bash", "-n", str(repo / "dot_claude/hooks" / file)], check=True)
 

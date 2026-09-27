@@ -14,20 +14,21 @@ Documents/**
 {{ end }}
 
 {{ if stat "/usr/share/omarchy" }}
-# Omarchy owns the desktop session, terminal theme and git identity. Its
-# defaults win on conflict; dotfiles only add what Omarchy does not cover.
-.config/hypr
-.config/hypr/**
-.config/waybar
-.config/waybar/**
-.config/mako
-.config/mako/**
-.config/ghostty
-.config/ghostty/**
+# Omarchy owns the desktop session and git identity. Only the Omarchy files
+# customized here are tracked; its defaults win everywhere else.
 .config/environment.d
 .config/environment.d/**
 .config/git/config
+{{ if not (stat (joinPath .chezmoi.sourceDir ".chezmoitemplates/monitors" (printf "%s.lua" .chezmoi.hostname))) }}
+# No monitor layout recorded for this host; leave Omarchy's generated one.
+.config/hypr/monitors.lua
+{{ end }}
 {{ else }}
+# Omarchy settings apply only on Omarchy.
+.config/hypr
+.config/hypr/**
+.config/omarchy
+.config/omarchy/**
 # Only needed on Omarchy, where ~/.config/git/config belongs to Omarchy.
 .gitconfig
 {{ end }}
