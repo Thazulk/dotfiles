@@ -7,6 +7,28 @@ Documents/**
 .config/powershell/**
 {{ end }}
 
+{{ if stat "/usr/share/omarchy" }}
+# Omarchy owns the desktop session, terminal theme and git identity. Its
+# defaults win on conflict; dotfiles only add what Omarchy does not cover.
+.config/hypr
+.config/hypr/**
+.config/waybar
+.config/waybar/**
+.config/mako
+.config/mako/**
+.config/ghostty
+.config/ghostty/**
+.config/environment.d
+.config/environment.d/**
+.config/git/config
+{{ else }}
+# Only needed on Omarchy, where ~/.config/git/config belongs to Omarchy.
+.gitconfig
+{{ end }}
+
+README.md
+LICENSE
+setup
 tests/**
 
 **/__pycache__/**

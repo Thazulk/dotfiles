@@ -4,3 +4,6 @@
 
 vim.g.snacks_animate = false
 vim.env.LG_CONFIG_FILE = vim.fn.stdpath("config") .. "/lazygit.yml"
+
+-- OSC 52 clipboard inside tmux/ssh/herdr sessions
+require("config.remote_clipboard").setup()

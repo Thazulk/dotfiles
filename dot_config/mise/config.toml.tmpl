@@ -1,4 +1,11 @@
 [tools]
+{{- if stat "/usr/share/omarchy" }}
+# Omarchy's ~/.local/bin wrappers run `mise use -g` for these; keeping them here
+# stops those wrappers from leaving local drift in this file.
+claude = "latest"
+codex = "latest"
+gemini = { version = "latest", allow_builds = ["@github/keytar", "node-pty"] }
+{{- end }}
 go = "latest"
 node = "24.19.0"
 python = ["latest", "3.13"]
@@ -10,7 +17,7 @@ bat = "latest"
 fzf = "latest"
 fd = "latest"
 usage = "latest"
-github-cli = "latest"
+gh = "latest"
 java = "temurin-17"
 zig = "latest"
 maven = "3.9"
@@ -42,5 +49,10 @@ rtk = "0.44.1"
 [settings]
 idiomatic_version_file_enable_tools = ["node", "go"]
 
+{{- if stat "/usr/share/omarchy" }}
+[settings.upgrade]
+auto_prune = false
+
+{{ end -}}
 [settings.npm]
 package_manager = "npm"

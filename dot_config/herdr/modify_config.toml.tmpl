@@ -1,0 +1,67 @@
+#!/usr/bin/env python3
+# On Omarchy, herdr's config belongs to Omarchy (it mirrors its tmux setup), so
+# the dotfiles settings are merged into it: keys Omarchy already sets win, the
+# rest is added. The result is validated; on any problem the file is left as is.
+import re
+import sys
+import tomllib
+
+dotfiles = """{{ template "herdr.toml" . }}"""
+current = sys.stdin.read()
+{{- if stat "/usr/share/omarchy" }}
+if not current.strip():
+    sys.stdout.write(dotfiles)
+    sys.exit(0)
+
+try:
+    have = tomllib.loads(current)
+    want = tomllib.loads(dotfiles)
+except tomllib.TOMLDecodeError:
+    sys.stdout.write(current)
+    sys.exit(0)
+
+
+
+def render(v):
+    if isinstance(v, bool):
+        return "true" if v else "false"
+    if isinstance(v, str):
+        return '"' + v.replace("\\", "\\\\").replace('"', '\\"') + '"'
+    return str(v)
+
+
+out = current
+top = [f"{k} = {render(v)}" for k, v in want.items()
+       if not isinstance(v, (dict, list)) and k not in have]
+if top:
+    out = "\n".join(top) + "\n\n" + out
+
+for table, entries in want.items():
+    if table == "keys":
+        commands = {c.get("command") for c in have.get("keys", {}).get("command", [])}
+        for cmd in entries.get("command", []):
+            if cmd.get("command") in commands:
+                continue
+            block = "[[keys.command]]\n" + "".join(f"{k} = {render(v)}\n" for k, v in cmd.items())
+            out = out.rstrip("\n") + "\n\n" + block
+        continue
+    if not isinstance(entries, dict):
+        continue
+    missing = {k: v for k, v in entries.items() if k not in have.get(table, {})}
+    if not missing:
+        continue
+    lines = "".join(f"{k} = {render(v)}\n" for k, v in missing.items())
+    header = re.search(rf"(?m)^\[{re.escape(table)}\]\s*\n", out)
+    if header:
+        out = out[:header.end()] + lines + out[header.end():]
+    else:
+        out = out.rstrip("\n") + f"\n\n[{table}]\n" + lines
+
+try:
+    tomllib.loads(out)
+except tomllib.TOMLDecodeError:
+    out = current
+sys.stdout.write(out)
+{{- else }}
+sys.stdout.write(dotfiles)
+{{- end }}

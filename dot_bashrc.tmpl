@@ -1,3 +1,95 @@
+{{- if stat "/usr/share/omarchy" -}}
+# ~/.bashrc on Omarchy: Omarchy's defaults first, then the parts of the dotfiles
+# .zshrc that Omarchy does not already provide (bash is Omarchy's shell).
+
+# Omarchy environment (OMARCHY_PATH + PATH), needed even for non-interactive shells
+[[ -r /usr/share/omarchy/default/bash/env-bootstrap ]] && source /usr/share/omarchy/default/bash/env-bootstrap
+
+# Sessionizer and AI toolstack scripts; also needed by agents' non-interactive shells
+case ":$PATH:" in
+  *":$HOME/.local/scripts:"*) ;;
+  *) export PATH="$HOME/.local/scripts:$PATH" ;;
+esac
+
+# If not running interactively, don't do anything else (leave this above the rc source)
+[[ $- != *i* ]] && return
+
+# All the default Omarchy aliases and functions (mise, starship, zoxide, fzf)
+source "$OMARCHY_PATH/default/bash/rc"
+
+# --- dotfiles ---------------------------------------------------------------
+
+HISTSIZE=100000
+HISTFILESIZE=100000
+# Share history between sessions, as zsh SHARE_HISTORY did.
+PROMPT_COMMAND="history -a; history -n${PROMPT_COMMAND:+; $PROMPT_COMMAND}"
+
+export VISUAL='nvim'
+export EDITOR='nvim'
+[[ -n "$TMUX" ]] && export TERM="tmux-256color"
+
+if command -v go >/dev/null 2>&1; then
+  export GOPATH="${GOPATH:-$(go env GOPATH 2>/dev/null || echo "$HOME/go")}"
+  [[ -d "$GOPATH/bin" ]] && export PATH="$GOPATH/bin:$PATH"
+fi
+
+# Git aliases
+alias gst='git status'
+alias gf='git fetch'
+alias gcan!='git commit -v -a --no-edit --amend'
+alias gpl='git pull'
+alias gaa='git add .'
+alias gcm='git commit -m'
+alias gco='git checkout'
+alias gcb='git checkout -b'
+alias gbr='git branch'
+alias gsw='git switch'
+alias gswc='git switch -c'
+alias gsp='git stash push -u -m "$(date +%Y-%m-%d_%H-%M-%S)"'
+alias gsa='git stash apply'
+alias gsl='git stash list'
+alias gsd='git stash drop'
+alias gpop='git stash pop'
+
+# finds all files recursively and sorts by last modification, ignore hidden files
+alias lastmod='find . -type f -not -path "*/\.*" -exec ls -lrt {} +'
+alias reload='source ~/.bashrc'
+alias yu="yay -Syu"
+
+alias fe-up="docker compose -f docker-compose-dev.yml up"
+alias vimbegood="docker run -it brandoncc/vim-be-good:latest"
+
+alias v="nvim ."
+alias sv="sudo nvim "
+alias k="kubectl"
+alias tks="tmux kill-server"
+
+if command -v kubectl >/dev/null 2>&1; then
+  source <(kubectl completion bash)
+  complete -o default -F __start_kubectl k
+fi
+
+# Vi mode. Omarchy's inputrc was bound to the emacs keymap, so re-apply it to
+# the vi keymaps to keep prefix history search on the arrows and Tab cycling.
+set -o vi
+bind -m vi-insert -f "$OMARCHY_PATH/default/bash/inputrc"
+bind -m vi-command '"\e[A": history-search-backward'
+bind -m vi-command '"\e[B": history-search-forward'
+
+fzf_cd_widget() {
+  local selected
+  selected="$("$HOME/.local/scripts/fzf-dir")" || return
+  [[ -n "$selected" ]] && cd -- "$selected"
+}
+# ctrl+f: change directory
+bind -m vi-insert -x '"\C-f": fzf_cd_widget'
+# ctrl+t: tmux sessionizer (replaces fzf's file widget)
+bind -m vi-insert '"\C-t": "tmux-sessionizer\n"'
+# ctrl+h: herdr sessionizer
+bind -m vi-insert '"\C-h": "herdr-sessionizer\n"'
+# alt+f: VS Code sessionizer
+bind -m vi-insert '"\ef": "vscode-sessionizer\n"'
+{{- else -}}
 # ~/.bashrc
 
 # If not running interactively, don't do anything
@@ -18,3 +110,4 @@ if command -v mise >/dev/null 2>&1; then
     [[ -d "$GOPATH/bin" ]] && export PATH="$GOPATH/bin:$PATH"
   fi
 fi
+{{- end }}

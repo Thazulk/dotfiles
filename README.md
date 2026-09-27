@@ -40,10 +40,7 @@ chezmoi init --apply https://github.com/Thazulk/dotfiles.git
 
 ### 3. Install runtimes and CLIs
 
-Neovim needs an external mise plugin once per machine:
-
 ```bash
-mise plugin install neovim https://github.com/richin13/asdf-neovim.git
 mise install
 ```
 
@@ -97,6 +94,21 @@ On macOS, `~/Library/LaunchAgents/com.thazulk.ai-toolstack-update.plist` runs th
 nvim   # LazyVim installs editor plugins on first start
 tmux
 ```
+
+## Omarchy
+
+On [Omarchy](https://omarchy.org/) (detected by `/usr/share/omarchy`), the templates adapt so Omarchy keeps working and its defaults win where both sides configure the same thing:
+
+| Area | Behaviour on Omarchy |
+| --- | --- |
+| `hypr`, `waybar`, `mako`, `ghostty`, `environment.d` | Not applied; Omarchy owns the desktop session and terminal theme |
+| `~/.bashrc` | Omarchy's rc is sourced first, then the `.zshrc` aliases, vi mode, sessionizer keys, and `~/.local/scripts` on `PATH` |
+| git | Omarchy keeps `~/.config/git/config`; the delta and merge settings go to `~/.gitconfig`, which git reads as well |
+| tmux | `~/.tmux.conf` holds only the bindings Omarchy does not define; Omarchy's `~/.config/tmux/tmux.conf` loads after it |
+| herdr | Merged into Omarchy's `config.toml` by a `modify_` script; keys Omarchy already sets are left alone |
+| mise | Adds `claude`, `codex` and `gemini`, which Omarchy's `~/.local/bin` wrappers pin with `mise use -g` |
+
+Omarchy uses bash, so `.zshrc` is installed but only matters if you switch shells.
 
 ## Daily use
 

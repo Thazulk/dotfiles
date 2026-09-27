@@ -165,12 +165,25 @@ claude_plugin_installed() {
     claude plugin list 2>/dev/null | grep -q "$1"
 }
 
+# The curated marketplace name depends on the Codex login state (`openai-curated`,
+# or `openai-api-curated` e.g. before signing in), so look the plugin id up.
+codex_plugin_id() {
+    codex plugin list 2>/dev/null | grep -oE "^$1@[A-Za-z0-9._-]+" | head -n1
+}
+
+# Plugins are optional: a missing marketplace entry must not abort the MCP setup.
 install_agent_plugins() {
-    if have codex && ! codex_plugin_installed "superpowers@openai-curated"; then
-        run codex plugin add superpowers@openai-curated
+    local id
+    if have codex; then
+        id="$(codex_plugin_id superpowers)"
+        if [[ -z "$id" ]]; then
+            say "skip: Codex superpowers plugin not found in any marketplace" >&2
+        elif ! codex_plugin_installed "$id"; then
+            run codex plugin add "$id" || true
+        fi
     fi
     if have claude && ! claude_plugin_installed "superpowers@claude-plugins-official"; then
-        run claude plugin install superpowers@claude-plugins-official -y --scope user
+        run claude plugin install superpowers@claude-plugins-official -y --scope user || true
     fi
 }
 

@@ -24,11 +24,15 @@ set -as terminal-overrides ',*:Setulc=\E[58::2::%p1%{65536}%/%d::%p1%{256}%/%{25
 # set -as terminal-overrides ',*:Smulx=\E[4::%p1%dm'  # undercurl support
 # set -as terminal-overrides ',*:Setulc=\E[58::2::%p1%{65536}%/%d::%p1%{256}%/%{255}%&%d::%p1%{255}%&%d%;m'  # underscore colours - needs tmux-3.0
 
+# On Omarchy, ~/.config/tmux/tmux.conf loads after this file and owns reload,
+# copy-mode and pane keys, so only the non-conflicting bindings are kept.
+{{ if not (stat "/usr/share/omarchy") -}}
 unbind r
 bind r source-file ~/.tmux.conf
 set-window-option -g mode-keys vi
 bind -T copy-mode-vi v send-keys -X begin-selection
 bind -T copy-mode-vi y send-keys -X copy-pipe-and-cancel 'xclip -in -selection clipboard'
+{{ end -}}
 
 # Set new panes to open in current directory
 bind c new-window -c "#{pane_current_path}"
@@ -37,16 +41,20 @@ bind % split-window -h -c "#{pane_current_path}"
 
 # vim-like pane switching
 bind -r ^ last-window
+{{ if not (stat "/usr/share/omarchy") -}}
 bind -r k select-pane -U
 bind -r j select-pane -D
 bind -r h select-pane -L
 bind -r l select-pane -R
+{{ end -}}
 #
+{{ if not (stat "/usr/share/omarchy") -}}
 # List of plugins
 set -g @plugin 'tmux-plugins/tmux-prefix-highlight'
 set -g @plugin 'tmux-plugins/tpm'
 set -g @plugin 'tmux-plugins/tmux-sensible'
 set -g @plugin 'tmux-plugins/tmux-yank'
+{{ end -}}
 
 # some keybinds
 bind-key -r f run-shell "tmux neww ~/.local/scripts/tmux-cd '#{pane_id}'"
@@ -72,6 +80,8 @@ bind m display-popup -E "\
 # set -g @plugin 'git@bitbucket.com:user/plugin'
 
 
+# On Omarchy the tmux theme follows the Omarchy theme instead.
+{{ if not (stat "/usr/share/omarchy") -}}
 #MANUAL TMUX TOKYONIGHT
 # TokyoNight colors for Tmux
 
@@ -116,3 +126,4 @@ set -g @prefix_highlight_output_suffix ""
 
 # Initialize TMUX plugin manager (keep this line at the very bottom of tmux.conf)
 run '~/.tmux/plugins/tpm/tpm'
+{{ end -}}

@@ -28,7 +28,11 @@ say "==> AI toolstack update"
 
 if have codex; then
     run codex plugin marketplace upgrade --json
-    codex_plugin_installed superpowers@openai-curated || run codex plugin add superpowers@openai-curated
+    # The curated marketplace name depends on the Codex login state.
+    superpowers="$(codex plugin list 2>/dev/null | grep -oE '^superpowers@[A-Za-z0-9._-]+' | head -n1)"
+    if [[ -n "$superpowers" ]]; then
+        codex_plugin_installed "$superpowers" || run codex plugin add "$superpowers"
+    fi
     codex_plugin_installed ponytail@ponytail || run codex plugin add ponytail@ponytail
 else
     say "skip: codex is not installed"

@@ -13,7 +13,9 @@ defaults = json.loads((repo / "dot_config/agents/codex-defaults.json").read_text
 model_matrix = (repo / "dot_claude/MODEL-MATRIX.md").read_text()
 assert "agent-route <class>" in model_matrix
 assert "gpt-5.5" in model_matrix and "gpt-6-astra" in model_matrix
-manifest = tomllib.loads((repo / "dot_config/mise/config.toml").read_text())
+# The manifest is a chezmoi template; its directives sit on lines of their own.
+manifest_source = (repo / "dot_config/mise/config.toml.tmpl").read_text()
+manifest = tomllib.loads("\n".join(l for l in manifest_source.splitlines() if not l.lstrip().startswith("{{")))
 for tool in ["npm:pnpm", "ast-grep", "rtk", "npm:@upstash/context7-mcp", "npm:codebase-memory-mcp", "npm:@suatkocar/codegraph", "npm:@playwright/mcp", "npm:nx-mcp", "npm:codeburn", "pipx:ddgs", "pipx:repowise", "pipx:headroom-ai"]:
     assert tool in manifest["tools"]
 assert manifest["tools"]["pipx:repowise"]["uvx_args"] == "--python 3.13"
@@ -29,7 +31,7 @@ assert "playwright-mcp" in (repo / "dot_local/scripts/executable_bootstrap-ai-to
 assert "have brew" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
 assert "mcp-server" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
 assert "Claude Desktop MCP" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
-assert "superpowers@openai-curated" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
+assert "codex_plugin_id superpowers" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack").read_text()
 assert "superpowers@claude-plugins-official" in (repo / "dot_local/scripts/executable_bootstrap-ai-toolstack.ps1").read_text()
 for file in [
     "agent-ask-codex",
