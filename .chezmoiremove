@@ -1,0 +1,9 @@
+# Targets that used to be managed here and are removed on `chezmoi apply`.
+# tmux was replaced by herdr (Omarchy's own ~/.config/tmux is not touched).
+.tmux.conf
+.tmux-cht-command
+.tmux-cht-languages
+.local/scripts/tmux-cd
+.local/scripts/tmux-cht.sh
+.local/scripts/tmux-sessionizer
+.local/scripts/tmux-windowizer

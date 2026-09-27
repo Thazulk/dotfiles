@@ -71,8 +71,6 @@ fzf_cd_widget() {
 }
 # ctrl+f: change directory
 bind -m vi-insert -x '"\C-f": fzf_cd_widget'
-# ctrl+t: tmux sessionizer (replaces fzf's file widget)
-bind -m vi-insert '"\C-t": "tmux-sessionizer\n"'
 # ctrl+h: herdr sessionizer
 bind -m vi-insert '"\C-h": "herdr-sessionizer\n"'
 # alt+f: VS Code sessionizer

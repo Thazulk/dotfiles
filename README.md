@@ -12,10 +12,8 @@ Targets macOS and Linux/WSL. Native Windows is best-effort (PowerShell profiles 
 | --- | --- |
 | All | `git`, `curl` |
 | macOS | Xcode Command Line Tools: `xcode-select --install` |
-| Debian/Ubuntu/WSL | `build-essential`, `unzip`, `tmux`, `xclip` |
+| Debian/Ubuntu/WSL | `build-essential`, `unzip`, `xclip` |
 | Windows | WSL2 recommended; native setup covers PowerShell profiles only |
-
-`tmux` is not managed by mise here — install it from your system package manager (`brew install tmux`, `apt install tmux`).
 
 Optional, only needed by parts of the config: Cursor or VS Code, Docker or Rancher Desktop, `kubectl`, Android SDK.
 
@@ -92,7 +90,7 @@ On macOS, `~/Library/LaunchAgents/com.thazulk.ai-toolstack-update.plist` runs th
 
 ```bash
 nvim   # LazyVim installs editor plugins on first start
-tmux
+herdr
 ```
 
 ## Omarchy
@@ -104,7 +102,6 @@ On [Omarchy](https://omarchy.org/) (detected by `/usr/share/omarchy`), the templ
 | Desktop, terminal, theme | Omarchy's; only the files listed under *Omarchy customizations* are tracked |
 | `~/.bashrc` | Omarchy's rc is sourced first, then `~/.config/shell/common.sh` and the bash key bindings; Omarchy's inputrc is kept in vi mode |
 | git | Omarchy keeps `~/.config/git/config`; the delta and merge settings go to `~/.gitconfig`, which git reads as well |
-| tmux | `~/.tmux.conf` holds only the bindings Omarchy does not define; Omarchy's `~/.config/tmux/tmux.conf` loads after it |
 | herdr | Merged into Omarchy's `config.toml` by a `modify_` script; keys Omarchy already sets are left alone |
 | mise | Adds `claude`, `codex` and `gemini`, which Omarchy's `~/.local/bin` wrappers pin with `mise use -g` |
 
@@ -157,14 +154,10 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | `~/.config/shell/common.sh` | Aliases, editor, `PATH` and Go setup shared by both shells |
 | `zsh` + Pure prompt | macOS shell: vi mode, completion, fzf-tab, sessionizer keys |
 | `bash` | Linux and WSL shell (Omarchy's default): vi mode and the same sessionizer keys |
-| `tmux` | Terminal workspace, TokyoNight theme, project sessions |
-| `fzf-dir` | Shared project picker used by all sessionizer scripts |
-| `tmux-sessionizer` | `Ctrl-t`: jump to a tmux session for any project |
-| `tmux-windowizer` | Create or reuse a tmux window per branch/task |
-| `tmux-cd` | Send `cd <picked-dir>` into a pane |
-| `herdr-sessionizer` | `Ctrl-h`: open or focus a Herdr workspace |
-| `vscode-sessionizer` | `Alt-f`: open a picked project in VS Code/Cursor plus tmux |
-| `tmux-cht.sh` | Query `cht.sh` cheatsheets from inside tmux |
+| `herdr` | Terminal workspace: workspaces, tabs and panes |
+| `fzf-dir` | Directory picker behind the sessionizers and `Ctrl-f`: any depth under the roots in `sessionizer-paths.conf` (default `~`), directories only, hidden and `.gitignore`d trees skipped |
+| `herdr-sessionizer` | `Ctrl-h`: open or focus a Herdr workspace for a picked directory |
+| `vscode-sessionizer` | `Alt-f`: open a picked directory in VS Code |
 
 ### Editor and terminal
 
@@ -192,7 +185,6 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | `npm`, `pnpm`, `corepack`, `uv`, `maven` | Package managers used across projects |
 | `nx` | Monorepo task runner |
 | `postgres` | Local database runtime |
-| `herdr` | Local workspace runtime driven by `herdr-sessionizer` |
 
 ### AI agent toolstack
 

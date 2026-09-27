@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# Open a picked project in VS Code.
 
 if [[ $# -eq 1 ]]; then
     selected=$1
@@ -6,19 +7,5 @@ else
     selected=$("$HOME/.local/scripts/fzf-dir")
 fi
 
-[[ -z "$selected" ]] && exit 0
-[[ -d "$selected" ]] && code "$selected"
-selected_name=$(basename "$selected" | tr . _)
-tmux_running=$(pgrep tmux)
-
-if [[ -z $TMUX ]] && [[ -z $tmux_running ]]; then
-    tmux new-session -s "$selected_name" -c "$selected"
-elif ! tmux has-session -t="$selected_name" 2> /dev/null; then
-    tmux new-session -ds "$selected_name" -c "$selected"
-fi
-
-if [[ -n $TMUX ]]; then
-    tmux switch-client -t "$selected_name"
-elif [[ -n $tmux_running ]]; then
-    tmux attach-session -t "$selected_name"
-fi
+[[ -n "$selected" && -d "$selected" ]] || exit 0
+exec code "$selected"

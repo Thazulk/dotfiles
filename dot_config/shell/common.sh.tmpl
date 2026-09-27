@@ -4,7 +4,6 @@
 
 export VISUAL='nvim'
 export EDITOR='nvim'
-[ -n "$TMUX" ] && export TERM="tmux-256color"
 
 # Sessionizer and AI toolstack scripts
 case ":$PATH:" in
@@ -49,9 +48,6 @@ alias sv="sudo nvim "
 
 # Kubectl
 alias k="kubectl"
-
-# Tmux
-alias tks="tmux kill-server"
 {{- if eq .chezmoi.os "darwin" }}
 
 # Android Studio (macOS)

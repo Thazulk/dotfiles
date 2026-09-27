@@ -1,37 +1,38 @@
 #!/usr/bin/env bash
+# Pick a directory at any depth under the roots in sessionizer-paths.conf.
 # Kept compatible with macOS's bash 3.2: no mapfile, no associative arrays.
 
 config_file="$HOME/.local/scripts/sessionizer-paths.conf"
-if [[ ! -f "$config_file" ]]; then
-    echo "Config file not found at $config_file" >&2
-    exit 1
+
+# Each config line is a root directory and may contain glob patterns. Unmatched
+# globs expand to nothing, and only newlines split words, so a line with spaces
+# stays one path.
+roots=()
+if [[ -f "$config_file" ]]; then
+    shopt -s nullglob
+    IFS=$'\n'
+    while IFS= read -r dir || [[ -n "$dir" ]]; do
+        [[ -z "$dir" || "$dir" =~ ^[[:space:]]*# ]] && continue
+        expanded_dir=${dir/#\~/$HOME}
+        # Unquoted on purpose: this expands the glob in the line.
+        for match in $expanded_dir; do
+            [[ -d "$match" ]] && roots+=("$match")
+        done
+    done < "$config_file"
+    unset IFS
 fi
+[[ ${#roots[@]} -eq 0 ]] && roots=("$HOME")
 
-# Unmatched globs expand to nothing, and only newlines split words, so a
-# config line with spaces stays one path.
-shopt -s nullglob
-IFS=$'\n'
+# Directories only, so the whole tree stays cheap. Hidden directories and
+# .gitignore'd trees (build output, vendored deps) are skipped; node_modules,
+# the Go module cache and macOS's Library are skipped even outside a repo.
+list_dirs() {
+    if command -v fd >/dev/null 2>&1; then
+        fd --type d --format '{}' --exclude node_modules --exclude Library --exclude '**/go/pkg' . "${roots[@]}"
+    else
+        find "${roots[@]}" -mindepth 1 \( -name '.*' -o -name node_modules -o -name Library -o -path '*/go/pkg' \) -prune -o -type d -print
+    fi
+}
 
-# Each config line is a directory path and may contain glob patterns, so the
-# config can reach into per-client or per-employer trees without naming them.
-base_dirs=()
-while IFS= read -r dir || [[ -n "$dir" ]]; do
-    [[ -z "$dir" || "$dir" =~ ^[[:space:]]*# ]] && continue
-
-    expanded_dir=${dir/#\~/$HOME}
-    # Unquoted on purpose: this expands the glob in the line.
-    for match in $expanded_dir; do
-        [[ -d "$match" ]] && base_dirs+=("$match")
-    done
-done < "$config_file"
-
-all_dirs=()
-for dir in "${base_dirs[@]}"; do
-    all_dirs+=("$dir")
-
-    for subdir in "$dir"/*/; do
-        all_dirs+=("${subdir%/}")
-    done
-done
-
-printf '%s\n' "${all_dirs[@]}" | sort -u | fzf
+# Stream into fzf so the list is usable while the walk is still running.
+{ printf '%s\n' "${roots[@]}"; list_dirs; } | awk '!seen[$0]++ { print; fflush() }' | fzf
