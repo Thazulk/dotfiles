@@ -168,7 +168,7 @@ claude_plugin_installed() {
 # The curated marketplace name depends on the Codex login state (`openai-curated`,
 # or `openai-api-curated` e.g. before signing in), so look the plugin id up.
 codex_plugin_id() {
-    codex plugin list 2>/dev/null | grep -oE "^$1@[A-Za-z0-9._-]+" | head -n1
+    codex plugin list 2>/dev/null | grep -oE "^$1@[A-Za-z0-9._-]+" | head -n1 || true
 }
 
 # Plugins are optional: a missing marketplace entry must not abort the MCP setup.
