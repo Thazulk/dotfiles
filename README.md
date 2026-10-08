@@ -115,6 +115,13 @@ only.
 | --- | --- |
 | `~/.config/hypr/monitors.lua` | Per host: `.chezmoitemplates/monitors/<hostname>.lua`; hosts without one keep Omarchy's generated file |
 | `~/.config/omarchy/defaults/agent` | Default agent for Omarchy's agent menu |
+| `~/.config/hypr/bindings.lua` | `CTRL + ALT + SPACE` toggles the keyboard layout; `SUPER + ALT + C` opens the Claude web app |
+| `~/.config/hypr/input.lua` | US + Hungarian layouts (`us,hu`), Right Alt stays AltGr |
+| `~/.config/hypr/hyprland.lua` | Gothic II (Steam 39510) window rules |
+| `~/.config/omarchy/shell.json` | Bar: transparent, Tailscale widget |
+| `~/.config/omarchy/shell.toml` | Shell font base size |
+| `~/.config/kitty/kitty.conf` | Kitty font size |
+| `~/.local/bin/kb-layout-toggle` | Keeps every keyboard on the same layout index so the bar stays in sync |
 
 After customizing another Omarchy file (for example `~/.config/hypr/bindings.lua`
 or `~/.config/omarchy/shell.json`), record it with `chezmoi add <file>`. To

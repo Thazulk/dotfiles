@@ -1,0 +1,9 @@
+#!/bin/bash
+# Cycle keyboard layout and keep every device on the same index, so the
+# Omarchy bar widget (which reads the furthest-advanced keyboard) stays in sync.
+# `hyprctl switchxkblayout all next` advances each device relative to its own
+# index, which drifts apart once any device is switched on its own.
+read -r current count < <(hyprctl -j devices | jq -r '
+  [.keyboards[] | select(.name | test("^(hl-virtual-keyboard|power-button|sleep-button|lid-switch|video-bus)") | not)]
+  | "\(map(.active_layout_index) | max) \(.[0].layout | split(",") | length)"')
+hyprctl switchxkblayout all $(( (current + 1) % count )) >/dev/null
