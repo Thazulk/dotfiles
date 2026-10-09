@@ -1,0 +1,92 @@
+{
+  "name": "hdr 10 bit",
+  "created_at": "2026-10-09T08:46:04.538013159Z",
+  "updated_at": "2026-10-09T08:46:44.63102483Z",
+  "outputs": [
+    {
+      "key": "shenzhen ktc technology group|m27p6|0000000000000",
+      "match_key": "shenzhen ktc technology group|m27p6|0000000000000",
+      "name": "DP-1",
+      "description": "Shenzhen KTC Technology Group M27P6 0000000000000",
+      "make": "Shenzhen KTC Technology Group",
+      "model": "M27P6",
+      "serial": "0000000000000",
+      "enabled": true,
+      "mode": "3840x2160@160.00Hz",
+      "width": 3840,
+      "height": 2160,
+      "refresh": 160,
+      "x": 0,
+      "y": 0,
+      "scale": 1.5,
+      "transform": 0,
+      "bitdepth": 10,
+      "cm": "hdredid",
+      "sdr_brightness": 1,
+      "sdr_saturation": 1.1,
+      "sdr_min_luminance": 0.005,
+      "sdr_max_luminance": 250,
+      "min_luminance": 0,
+      "sdr_eotf": "gamma22"
+    }
+  ],
+  "workspaces": {
+    "enabled": true,
+    "strategy": "sequential",
+    "max_workspaces": 9,
+    "group_size": 3,
+    "monitor_order": [
+      "shenzhen ktc technology group|m27p6|0000000000000"
+    ],
+    "rules": [
+      {
+        "workspace": "1",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1",
+        "default": true,
+        "persistent": true
+      },
+      {
+        "workspace": "2",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "3",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "4",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "5",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "6",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "7",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "8",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      },
+      {
+        "workspace": "9",
+        "output_key": "shenzhen ktc technology group|m27p6|0000000000000",
+        "output_name": "DP-1"
+      }
+    ]
+  },
+  "exec": ""
+}

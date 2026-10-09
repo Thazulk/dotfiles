@@ -117,8 +117,9 @@ only.
 | `~/.config/omarchy/defaults/agent` | Default agent for Omarchy's agent menu |
 | `~/.config/hypr/bindings.lua` | `CTRL + ALT + SPACE` toggles the keyboard layout; `SUPER + ALT + C` opens the Claude web app |
 | `~/.config/hypr/input.lua` | US + Hungarian layouts (`us,hu`), Right Alt stays AltGr |
-| `~/.config/hypr/hyprland.lua` | Gothic II (Steam 39510) window rules |
-| `~/.config/omarchy/shell.json` | Bar: transparent, Tailscale widget |
+| `~/.config/hypr/hyprland.lua` | Gothic II (Steam 39510) window rules; loads hyprmoncfg's generated monitor rules last |
+| `~/.config/omarchy/shell.json` | Bar: transparent, Tailscale and hyprmoncfg widgets |
+| `~/.config/hyprmoncfg/profiles/` | hyprmoncfg monitor profiles; `hdr-10-bit` is the KTC M27P6 in 10-bit HDR with gamma 2.2 SDR, 0.005–250 nits, 1.1 saturation. Edit the JSON, then `hyprmoncfg apply "hdr 10 bit"` |
 | `~/.config/omarchy/shell.toml` | Shell font base size |
 | `~/.config/kitty/kitty.conf` | Kitty font size |
 | `~/.local/bin/kb-layout-toggle` | Keeps every keyboard on the same layout index so the bar stays in sync |
