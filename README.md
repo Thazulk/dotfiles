@@ -160,7 +160,7 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | --- | --- |
 | `~/.config/shell/common.sh` | Aliases, editor, `PATH` and Go setup shared by both shells |
 | `zsh` + Pure prompt | macOS shell: vi mode, completion, fzf-tab, sessionizer keys |
-| `bash` | Linux and WSL shell (Omarchy's default): vi mode and the same sessionizer keys |
+| `bash` | Linux and WSL shell (Omarchy's default): vi mode, the same sessionizer keys, and the systemd user `ssh-agent` socket when it exists |
 | `herdr` | Terminal workspace: workspaces, tabs and panes |
 | `fzf-dir` | Directory picker behind the sessionizers and `Ctrl-f`: any depth under the roots in `sessionizer-paths.conf` (default `~`), directories only, hidden and `.gitignore`d trees skipped |
 | `herdr-sessionizer` | `Ctrl-h`: open or focus a Herdr workspace for a picked directory |
@@ -183,6 +183,7 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | `gh` | GitHub workflow from the terminal |
 | `ast-grep` | Syntax-aware search and mechanical rewrites |
 | `rtk` | Filtered shell output for agent sessions |
+| `usage` | CLI spec tool mise uses for completions |
 
 ### Language and build tooling
 
@@ -191,6 +192,7 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | `node`, `python`, `go`, `rust`, `java`, `zig` | Pinned language runtimes |
 | `npm`, `pnpm`, `corepack`, `uv`, `maven` | Package managers used across projects |
 | `nx` | Monorepo task runner |
+| `nest` (`@nestjs/cli`) | NestJS project scaffolding |
 | `postgres` | Local database runtime |
 
 ### AI agent toolstack
@@ -207,6 +209,7 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | `agent-ask-codex` | Scoped headless Codex call for fast, focused implementation |
 | `agent-ask-claude` | Scoped Claude call in plan mode for planning and review |
 | `agent-ask-gemini` | Scoped Gemini call for large-context reads |
+| `codegraph`, `codeburn` | Wrappers that run the mise-installed binaries; `codegraph` bypasses the npm 0.2.1 launcher, which recurses |
 | `matrix-evidence` | Offline freshness check for `~/.claude/MODEL-MATRIX.md` |
 | `configure-agent-defaults` | Merges tracked Codex defaults into local config |
 | `configure-agent-hooks` | Registers shared hooks in Codex without dropping unrelated ones |
