@@ -1,0 +1,17 @@
+# Global excludes (git's default core.excludesFile): files my own tooling drops into
+# any repo. They mean nothing to the repo's other contributors, so they stay out of
+# each project's .gitignore.
+
+# Claude Code per-user settings
+**/.claude/settings.local.json
+
+# Code-intelligence indexes (Repowise, CodeGraph)
+.repowise/
+.codegraph/
+
+# Personal tool versions (mise reads these next to a shared mise.toml)
+mise.local.toml
+.mise.local.toml
+
+# macOS Finder metadata
+.DS_Store
