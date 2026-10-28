@@ -62,13 +62,21 @@ constraints; more specific instructions refine these defaults.
 
 ## Umbrella folders (Claude desktop app)
 
-- When a session starts in a non-git folder that holds several repos (e.g. a
-  product folder like `zanni/`), move the session into the repo the work lands in
-  with the app's change-directory tool before the first edit, so its Changes tab
-  shows the diff. Pick the repo with the main change; work in sibling repos keeps
-  using absolute paths.
-- File the session in the sidebar group named after that repo, reusing an
-  existing group over creating a near-duplicate, and give it a title naming the
-  ticket and the change.
+- A session in a non-git folder that holds several repos (e.g. a product folder
+  like `zanni/`) settles where the work belongs on its first turn, as soon as the
+  affected repo is known — read-only tasks (CI logs, PR review, investigation)
+  included, not only before the first edit. These instructions name the place,
+  so a sub-repo of the umbrella folder counts as a user-named `cwd`.
+- One repo affected: move this session into it with the app's change-directory
+  tool, so its Changes tab shows the diff. Work in sibling repos keeps using
+  absolute paths. `cd` in Bash is not a move.
+- Several repos affected, each with its own independent change: this session
+  stays in the umbrella folder as coordinator and starts one session per repo
+  (`start_session`, `cwd` = that repo, a fresh brief scoped to that repo's part).
+  If the parts depend on each other, keep one session in the repo with the main
+  change instead and reach the others by absolute path.
+- Every repo session (this one after a move, or a started one) goes in the
+  sidebar group named after its repo — reuse an existing group, create it only
+  when missing — with a title naming the ticket and the change.
 - The Changes tab shows one repo only: name the other repos' changed files in the
   final report. Outside the desktop app (no such tools), skip this.

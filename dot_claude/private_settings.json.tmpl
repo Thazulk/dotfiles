@@ -88,6 +88,11 @@
             "type": "command",
             "command": "if [ -f \"$HOME/.claude/hooks/route-gate.sh\" ]; then bash \"$HOME/.claude/hooks/route-gate.sh\"; fi",
             "timeout": 10
+          },
+          {
+            "type": "command",
+            "command": "if [ -f \"$HOME/.claude/hooks/umbrella-reminder.sh\" ]; then bash \"$HOME/.claude/hooks/umbrella-reminder.sh\"; fi",
+            "timeout": 5
           }
         ]
       }
