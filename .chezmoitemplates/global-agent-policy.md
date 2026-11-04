@@ -36,11 +36,37 @@ constraints; more specific instructions refine these defaults.
 
 ## Discovery and tools
 
-- Read project policy first. Prefer codebase-memory-mcp for an already indexed
-  repository, CodeGraph for structural exploration, and Repowise for architecture,
-  impact, and code-health context when a `.repowise` directory and tools exist.
-  If an index is absent or a server is unavailable, use normal tools immediately.
-  Do not initialize a project index automatically.
+- Read project policy first. For every project coding request in Claude Code or
+  Codex, ensure both codebase-memory-mcp and Repowise indexes exist and are current
+  before code exploration. This is standing authorization to create missing local
+  indexes; no separate confirmation is needed. Scope indexing to each repository
+  involved in the request, including its active worktree, never an umbrella folder
+  or unrelated repositories. Explicit task constraints still take precedence.
+- For codebase-memory, inspect `list_projects`/`index_status` for the exact repo
+  path; create a missing index with `index_repository(repo_path=<absolute root>,
+  persistence=false)`. Refresh with the same tool when source files change; wait
+  for completion (poll async jobs when used). CLI fallback:
+  `codebase-memory-mcp cli index_repository '{"repo_path":"<absolute root>","persistence":false}'`.
+- For a missing Repowise index, run from the repository root:
+  `repowise init . --mode fast --no-prose --no-editor-setup --no-save-key --no-agents --no-claude-md --no-codex --no-hook --no-distill-hook --no-workspace --yes`.
+  For an existing index and after initialization, refresh uncommitted files too:
+  `repowise update . --index-only --defer-docs --working-tree --no-workspace --no-agents`.
+  Treat incomplete/failed runs as stale. Automatic indexing makes no paid model
+  calls and does not replace project instructions, editor config, or git hooks.
+- Check freshness at task start and after pulls, branch/worktree changes, or
+  external edits. After each coherent batch of source edits, additions, renames,
+  or deletions, refresh both indexes before querying them again and before the
+  final handoff. Include staged, unstaged, and untracked source changes; do not
+  assume a commit hook or a watcher has completed. Join an existing indexing job
+  instead of starting duplicate writers; verify completion, not just file presence.
+- Use codebase-memory for symbols, callers and source tracing; Repowise for
+  architecture, impact and code-health context; CodeGraph remains optional.
+  If a tool is unavailable or indexing fails, report the blocker, use normal tools
+  to continue useful work, and do not claim that a stale index is current.
+- Keep generated `.repowise/`, `.codebase-memory/`, and `.codegraph/` directories
+  excluded through the global Git ignore (`~/.config/git/ignore`), not each repo's
+  shared `.gitignore`. Keep CBM's home-directory cache out of dotfiles too. Existing
+  tracked artifacts stay tracked until the user explicitly asks to untrack them.
 - Use `rg` / `rg --files` for literal searches and fallback discovery; use ast-grep
   for syntax-aware searches and mechanical rewrites. Use Context7 for current
   library documentation when available.

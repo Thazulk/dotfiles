@@ -5,8 +5,9 @@
 # Claude Code per-user settings
 **/.claude/settings.local.json
 
-# Code-intelligence indexes (Repowise, CodeGraph)
+# Code-intelligence indexes (Repowise, Codebase Memory, CodeGraph)
 .repowise/
+.codebase-memory/
 .codegraph/
 
 # Personal tool versions (mise reads these next to a shared mise.toml)
