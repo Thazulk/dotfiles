@@ -25,23 +25,29 @@ def _tokens(n):
 
 
 def codex():
-    f = _newest(glob.glob(f"{HOME}/.codex/sessions/**/*.jsonl", recursive=True))
-    if not f:
+    files = sorted(glob.glob(f"{HOME}/.codex/sessions/**/*.jsonl", recursive=True),
+                   key=os.path.getmtime, reverse=True)
+    if not files:
         return "codex   : no sessions found"
     latest = None
-    with open(f, errors="replace") as fh:
-        for line in fh:
-            if '"rate_limits"' not in line:
-                continue
-            try:
-                rl = json.loads(line)["payload"]["rate_limits"]
-            except Exception:
-                continue
-            if rl:
-                latest = rl
+    source = None
+    for f in files:
+        with open(f, errors="replace") as fh:
+            for line in fh:
+                if '"rate_limits"' not in line:
+                    continue
+                try:
+                    rl = json.loads(line)["payload"]["rate_limits"]
+                except Exception:
+                    continue
+                if rl:
+                    latest = rl
+                    source = f
+        if latest:
+            break
     if not latest:
-        return "codex   : no rate_limit records in newest session"
-    age_h = (time.time() - os.path.getmtime(f)) / 3600
+        return "codex   : no rate_limit records in recent sessions"
+    age_h = (time.time() - os.path.getmtime(source)) / 3600
     out = []
     for key, w in latest.items():
         if not isinstance(w, dict) or "used_percent" not in w:
@@ -154,7 +160,6 @@ def main():
         except Exception as e:
             print(f"{fn.__name__:8}: ERROR {e}")
     print("-" * 62)
-    print("local (free, no quota, when installed): opencode run --model ollama/gpt-oss:20b")
 
 
 if __name__ == "__main__":

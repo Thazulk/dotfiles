@@ -69,9 +69,8 @@ const prompt = process.env.GEMINI_PROMPT || '';
 const fs = require('fs');
 const os = require('os');
 const path = require('path');
-// ponytail: fixed 4-try backoff + one cheaper fallback model. 503/429 here is
-// Google-side overload ("high demand"), not our bug. Bump tries if it still bites.
-const models = [process.env.GEMINI_MODEL || 'gemini-3.8-flash', 'gemini-3.7-flash'];
+// Gemini 3.7 redirects to 3.8; retrying that alias doubles work on the same backend.
+const models = [process.env.GEMINI_MODEL || 'gemini-3.8-flash'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 function logUsage(model, usage) {

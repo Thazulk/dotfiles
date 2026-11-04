@@ -12,7 +12,7 @@ else
   prompt="$*"
 fi
 
-model="${CODEX_MODEL:-gpt-5.5}"
+model="${CODEX_MODEL:-gpt-6.1-sol}"
 sandbox="${CODEX_SANDBOX:-read-only}"
 
-exec codex exec -m "$model" --sandbox "$sandbox" --skip-git-repo-check "$prompt"
+exec codex exec -m "$model" --sandbox "$sandbox" --skip-git-repo-check "$prompt" </dev/null

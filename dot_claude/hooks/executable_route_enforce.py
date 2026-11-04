@@ -13,7 +13,7 @@ import json, os, re, sys, time, pathlib
 
 LOG = pathlib.Path(os.environ.get("ROUTE_LOG", os.path.expanduser("~/.claude/route-log.jsonl")))
 TMP = pathlib.Path(os.environ.get("TMPDIR", "/tmp"))
-ROUTE_RE = re.compile(r"^\s*route:\s*(solo|codex|claude|gemini|ollama)\b[ \t]*(?:reason=(.*))?$",
+ROUTE_RE = re.compile(r"^\s*route:\s*(solo|codex|claude|gemini)\b[ \t]*(?:reason=(.*))?$",
                       re.IGNORECASE | re.MULTILINE)
 
 
@@ -147,7 +147,7 @@ def main():
     json.dump({
         "decision": "block",
         "reason": ("Routing gate: this turn matched a delegatable prompt but emitted no routing "
-                   "decision. Add the line `route: <solo|codex|claude|gemini|ollama> reason=<short>` "
+                   "decision. Add the line `route: <solo|codex|claude|gemini> reason=<short>` "
                    "and act on it. `solo` is fine when justified — state the reason. "
                    "This nudge fires once; it will not repeat."),
     }, sys.stdout)

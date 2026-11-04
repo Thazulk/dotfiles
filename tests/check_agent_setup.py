@@ -12,7 +12,7 @@ merge = runpy.run_path(str(repo / "dot_local/scripts/executable_configure-agent-
 defaults = json.loads((repo / "dot_config/agents/codex-defaults.json").read_text())
 model_matrix = (repo / "dot_claude/MODEL-MATRIX.md").read_text()
 assert "agent-route <class>" in model_matrix
-assert "gpt-5.5" in model_matrix and "gpt-6-astra" in model_matrix
+assert "gpt-6.1-sol" in model_matrix and "gpt-6-astra" in model_matrix
 # The manifest is a chezmoi template; its directives sit on lines of their own.
 manifest_source = (repo / "dot_config/mise/config.toml.tmpl").read_text()
 manifest = tomllib.loads("\n".join(l for l in manifest_source.splitlines() if not l.lstrip().startswith("{{")))
@@ -98,7 +98,7 @@ with tempfile.TemporaryDirectory() as directory:
     assert subprocess.run(["bash", str(repo / "dot_local/bin/executable_agent-ask-claude")], env=env, capture_output=True, stdin=subprocess.DEVNULL).returncode == 2
     route = ["python3", str(repo / "dot_local/bin/executable_agent-route"), "code"]
     routed = subprocess.run(route, env=env, capture_output=True, text=True, check=True)
-    assert "class: code" in routed.stdout and "Codex gpt-5.5" in routed.stdout
+    assert "class: code" in routed.stdout and "Codex gpt-6.1-sol" in routed.stdout
     bad_route = subprocess.run(["python3", str(repo / "dot_local/bin/executable_agent-route")], env=env, capture_output=True)
     assert bad_route.returncode == 1
     npm = root / "mise"
@@ -112,6 +112,23 @@ with tempfile.TemporaryDirectory() as directory:
     native.write_text('#!/bin/sh\nprintf "%s\\n" "$1"\n')
     native.chmod(0o755)
     assert subprocess.check_output(launcher, env=env, text=True).strip() == "--version"
+
+# Caller-aware routing must work symmetrically without accounts or model calls.
+from unittest.mock import patch
+import contextlib
+import io
+router = runpy.run_path(str(repo / "dot_local/bin/executable_agent-route"))
+main = router["main"]
+for agent in ("codex", "claude"):
+    for task in ("code", "review", "hard", "long", "orchestrate"):
+        output = io.StringIO()
+        with patch.dict(main.__globals__, exhausted=lambda: set(), gemini_available=lambda: False), patch("sys.argv", ["agent-route", task, "--agent", agent]), contextlib.redirect_stdout(output):
+            main()
+        use = next(line for line in output.getvalue().splitlines() if line.startswith("> USE"))
+        assert agent.lower() in use.lower(), (agent, task, output.getvalue())
+        assert "stay in this session" in output.getvalue()
+assert "ollama" not in str(router["CHAIN"])
+assert all(row[4] != "gpt-6.1-terra" for rows in router["CHAIN"].values() for row in rows)
 
 for file in ["executable_agent-route", "executable_agent-quota", "executable_matrix-evidence", "../scripts/executable_configure-agent-hooks"]:
     subprocess.run(["python3", "-m", "py_compile", str(repo / "dot_local/bin" / file)], check=True)
@@ -146,7 +163,7 @@ with tempfile.TemporaryDirectory() as directory:
     env = os.environ | {"ROUTE_LOG": str(root / "route-log.jsonl"), "TMPDIR": directory}
     gate = subprocess.run(["bash", str(repo / "dot_claude/hooks/executable_route-gate.sh")], env=env, check=True,
                           input=json.dumps({"prompt": "review this", "session_id": "s1"}), capture_output=True, text=True)
-    assert "route: <solo|codex|claude|gemini|ollama>" in json.loads(gate.stdout)["hookSpecificOutput"]["additionalContext"]
+    assert "route: <solo|codex|claude|gemini>" in json.loads(gate.stdout)["hookSpecificOutput"]["additionalContext"]
     enforce = [ "python3", str(repo / "dot_claude/hooks/executable_route_enforce.py")]
     codex_transcript = root / "rollout.jsonl"
     codex_transcript.write_text("\n".join(json.dumps(r) for r in [

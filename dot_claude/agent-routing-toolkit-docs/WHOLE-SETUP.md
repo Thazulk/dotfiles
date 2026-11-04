@@ -1,34 +1,47 @@
 # Whole Agent Setup
 
-This document describes a global Codex / Claude / Gemini / Ollama setup. It is intended as a practical map: what each layer is for, which connectors and MCP servers are required, which skills matter, and how routing should work.
+## Local policy: equal Codex and Claude entry points
+
+Codex and Claude are equal primary agents. Continue implementation in the current
+session with its selected model. Use the other agent for independent advice; never
+self-delegate. The upstream routing tables below describe model choices and peer
+fallbacks, not a requirement to switch from Claude to Codex.
+Use `agent-route <class> --agent codex|claude` (or `AGENT_ROUTING_AGENT`);
+session environment is detected when available. Claude helper calls use plan mode;
+Codex helper calls default to read-only. Keep local Bash/Linux portability.
+Upstream verification dates describe source evidence, not tests on this machine.
+
+
+
+> Windows: follow [WINDOWS.md](WINDOWS.md) before using the Mac commands below.
+
+This document describes a global Codex / Claude / Gemini setup. It is intended as a practical map: what each layer is for, which connectors and MCP servers are required, which skills matter, and how routing should work.
 
 ## Setup Shape
 
 | Layer | Purpose | Main pieces |
 |---|---|---|
-| Codex | Default local implementer and premium orchestrator | Codex app/CLI, `gpt-5.5`, `gpt-6-astra`, workspace-write sandbox, MCP servers, plugins |
+| Codex | Default local implementer and premium orchestrator | Codex app/CLI, `gpt-6.1-sol`, `gpt-6-astra`, workspace-write sandbox, MCP servers, plugins |
 | Claude | Planning/review peer | Claude CLI, routing hooks, model matrix, `agent-ask-claude`, `agent-ask-codex` |
 | Gemini / Antigravity | Large-context and UI/product peer | Gemini API helper, Antigravity model slugs, `agent-ask-gemini` |
-| Ollama | Cheap local advisor | `gpt-oss:20b` when installed |
 | Shell tools | Fast local evidence | `rg`, `git`, `gh`, `python3`, `node`, `npx`, `docker`, `pnpm`, `go`, `curl` |
 | Graph/code tools | Codebase understanding | codebase-memory MCP, CodeGraph, Repowise |
 
 ## Core Defaults
 
-- Codex model: `gpt-5.5` for everyday work; `gpt-6-astra` for premium hard implementation/review/orchestration
+- Codex model: `gpt-6.1-sol` for implementation, review, long-running work, and ordinary fallbacks; `gpt-6-astra` for hard work, review escalation, and orchestration
 - Reasoning: `medium`
 - Service tier: `default`
 - Sandbox: `workspace-write`
 - Approval policy: `on-request`
 - Personality/work style: pragmatic, efficiency-first, small diffs, verify with one runnable check for non-trivial logic
 - Multi-agent feature: enabled
-- Local OSS provider: Ollama
 
 ## Routing Flow
 
 1. Default to Codex for focused coding work, local edits, verification, and commit/push tasks.
 2. Before expensive or broad delegation, run `agent-quota`.
-3. Pick a class with `agent-route <cheap|code|hard|long|orchestrate>`.
+3. Pick a class with `agent-route <cheap|code|review|hard|long|orchestrate>`.
 4. Delegate only when another agent is likely to reduce total time, context, or risk.
 5. Send a scoped brief: goal, repo/path, relevant files, known failure/output, exact question, and expected answer format.
 6. Treat peer-agent output as advice. Verify locally before editing, committing, or reporting.
@@ -38,16 +51,17 @@ This document describes a global Codex / Claude / Gemini / Ollama setup. It is i
 | Class | Use for | Typical first pick |
 |---|---|---|
 | `cheap` | renames, formatting, boilerplate, log triage, simple doc drafts | Claude Haiku or Gemini Flash depending on quota |
-| `code` | normal features, bugfixes, refactors | Codex `gpt-5.5`, with Astra escalation for high-value implementation/review |
-| `hard` | architecture, security, tricky debugging, final review | Codex `gpt-6-astra`, then Claude Opus |
-| `long` | whole-repo sweeps, huge logs, long-context reads | Claude Sonnet or Gemini Flash |
+| `code` | normal features, bugfixes, refactors | Codex `gpt-6.1-sol`, with Astra escalation for high-value implementation/review |
+| `review` | code/PR review, final review, regression checks | Codex `gpt-6.1-sol`, read-only; Astra escalation |
+| `hard` | architecture, complex security analysis, tricky debugging | Codex `gpt-6-astra`, then Claude Opus |
+| `long` | long-running implementation, whole-repo sweeps, long-context reads | Codex `gpt-6.1-sol`, then Claude Sonnet |
 | `orchestrate` | subagent coordination, multi-agent implementation/review loops | Codex `gpt-6-astra` |
 
 See `docs/MODEL-MATRIX.md` for the current exact chain, cost notes, pinned models, and banned models.
 
 ## Claude-to-Codex Path
 
-Claude calls Codex through the Codex CLI in the portable setup. A Codex MCP bridge can be used when a host exposes one, but the CLI path is the baseline because it works anywhere `codex exec` is installed. The portable helper is:
+Claude calls Codex through its installed official Codex plugin (app-server) or the CLI helper below. The old `codex mcp-server` command was removed and must not be configured. Codex asks Claude with `agent-ask-claude`; Claude MCP exposes tools rather than a live Claude conversation. The portable helper is:
 
 ```bash
 agent-ask-codex "<prompt>"
@@ -56,7 +70,7 @@ agent-ask-codex prompt-file.md
 
 Defaults:
 
-- `CODEX_MODEL=gpt-5.5`
+- `CODEX_MODEL=gpt-6.1-sol`
 - `CODEX_SANDBOX=read-only`
 
 Use the default read-only sandbox for advice, second opinions, quick local checks, or review of a proposed patch. Use write access only when implementation by Codex is intended:
@@ -77,7 +91,7 @@ The prompt should be self-contained: goal, repo/path, relevant files, known fail
 | `agent-quota` | Checking current Codex/Claude/Gemini usage evidence | Uses local session/transcript records |
 | `matrix-evidence` | Offline freshness check for model matrix | Run before spending tokens on model-matrix research |
 | `agent-ask-codex` | Asking Codex from Claude or another shell agent | Wraps `codex exec`; defaults to read-only |
-| `agent-ask-claude` | Asking Claude for scoped advice | Uses Claude plan mode and a small default budget |
+| `agent-ask-claude` | Asking Claude for scoped advice | Uses plan mode; set `CLAUDE_MAX_BUDGET_USD` only when an explicit API-equivalent budget is intended |
 | `agent-ask-gemini` | Asking Gemini for scoped advice | Uses Gemini API key from Keychain or env |
 | `agent-health` | Quick system health check | Runs quota/router/shared-memory/Gemini/Claude checks |
 
@@ -95,7 +109,6 @@ The prompt should be self-contained: goal, repo/path, relevant files, known fail
 | `logfire` | Observability SQL, traces, dashboards, alerts | Logfire telemetry work |
 | `Neon` | Postgres/cloud backend tooling | Neon database/backend work |
 | `computer-use` | Desktop UI control MCP | Only when enabled and native desktop interaction is needed |
-| Codex MCP bridge | Optional Claude-to-Codex bridge | Only when the local Claude setup exposes a Codex MCP server; otherwise use `agent-ask-codex` |
 
 ## Required Connectors / Plugins
 
@@ -205,6 +218,10 @@ Installed Superpowers skills:
 
 ## Local Tools
 
+Prefer installed, authenticated CLIs when they support the task efficiently, then existing API/MCP connectors. Use browser automation when these cannot complete the task, login or visual verification needs it, or the user requests it. Check unknown CLI availability/auth once and avoid repeated failed attempts.
+
+On Apple Silicon, verify RTK and Git resolve to runnable binaries. An old Intel Git can cause `rtk git` to fail with "Bad CPU type"; point the stale Git link to a working native/system Git after preserving it as a backup. A shell alias alone does not repair RTK's subprocess resolution.
+
 | Tool | Use it for |
 |---|---|
 | `rg` | Fast text/file search; first choice for literals and configs |
@@ -237,6 +254,9 @@ Run these after changing the setup:
 ```bash
 agent-quota
 agent-route code
+agent-route review
+agent-route hard
+agent-route orchestrate
 matrix-evidence
 agent-health
 ```

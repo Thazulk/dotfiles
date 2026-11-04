@@ -12,4 +12,8 @@ else
   prompt="$*"
 fi
 
-exec claude -p --permission-mode plan --max-budget-usd "${CLAUDE_MAX_BUDGET_USD:-0.20}" "$prompt"
+# Subscription quota is the ceiling; API-equivalent budget is opt-in.
+if [[ -n "${CLAUDE_MAX_BUDGET_USD:-}" ]]; then
+  exec claude -p --permission-mode plan --max-budget-usd "$CLAUDE_MAX_BUDGET_USD" "$prompt" </dev/null
+fi
+exec claude -p --permission-mode plan "$prompt" </dev/null

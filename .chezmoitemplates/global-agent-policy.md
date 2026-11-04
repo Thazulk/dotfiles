@@ -6,20 +6,31 @@ constraints; more specific instructions refine these defaults.
 
 ## Execution and peer advice
 
-- Codex is the default implementer: inspect, edit, run checks, and finish the task.
-- Claude is an optional planner or fresh reviewer for broad or multi-file work.
-  When directly asked to implement in Claude, complete that request there.
+- Codex and Claude are equal primary agents. The current session owns implementation,
+  checks, and completion; do not transfer work just because it started in either app.
+- Use the other agent for independent planning or fresh review when useful.
+  Never delegate to the agent you already are. Peer helpers are read-only by default.
 - Gemini is optional for large-context, read-first analysis or UI/product critique.
   Antigravity is a separate client; do not assume a Gemini CLI integration controls it.
-- Ollama is optional for local summaries and sanity checks, never final verification.
 - Before broad or expensive delegation, run `agent-quota`, then choose the class
-  with `agent-route cheap|code|hard|long|orchestrate`. Unknown quota is unknown,
+  with `agent-route cheap|code|review|hard|long|orchestrate`. Unknown quota is unknown,
   not proof of available capacity. Stop on auth or rate-limit failures; do not
   repeatedly retry or recursively delegate.
 - Send scoped prompts containing goal, absolute repo path, relevant files/context,
   known failures, constraints, and expected answer format. Use `agent-ask-claude`,
   `agent-ask-gemini`, or `agent-ask-codex` as the route suggests. Verify peer
   advice against local code and tests before adopting it.
+- `agent-route <class> --agent codex|claude` keeps the current agent first;
+  session environment is detected automatically when available. Outside those apps,
+  set `AGENT_ROUTING_AGENT` or pass `--agent` explicitly. Cost/quota filtering still applies.
+- Codex routes use GPT-6.1 Sol for code/review/long and GPT-6 Astra for hard/orchestrate.
+  Claude keeps its current session model; review advice via helpers stays in plan mode.
+  GPT-6.1 Terra is a candidate only, pending access and representative-task checks.
+- Prefer installed authenticated CLIs, then available API/MCP connectors; use the
+  browser for gaps, login, visual verification, or an explicit user request.
+- Claude calls Codex through its installed app-server plugin or `agent-ask-codex`;
+  Codex calls Claude through `agent-ask-claude`. Do not configure `codex mcp-server`.
+  Claude MCP exposes tools, not a live model conversation.
 - Keep `~/.claude/MODEL-MATRIX.md` as the routing matrix. Run `matrix-evidence`
   before spending model tokens on matrix updates.
 

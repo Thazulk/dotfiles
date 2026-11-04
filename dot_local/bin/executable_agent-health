@@ -33,7 +33,11 @@ agent-route orchestrate || true
 
 echo
 echo "== codex cli =="
-run_with_timeout 60 agent-ask-codex 'Reply exactly: ok' || echo "(timeout/failed)"
+if command -v agent-ask-codex >/dev/null 2>&1; then
+  run_with_timeout 60 agent-ask-codex 'Reply exactly: ok' || echo "(timeout/failed)"
+else
+  echo "(skipped: agent-ask-codex not installed)"
+fi
 
 echo
 echo "== shared memory =="

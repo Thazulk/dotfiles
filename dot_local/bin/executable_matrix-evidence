@@ -4,7 +4,7 @@
 No network, no model tokens. Prints NO CHANGES (exit 0) or a delta list
 (exit 1) so the weekly review only spends tokens when something moved.
 """
-import json, os, re, subprocess, sys, datetime
+import os, re, subprocess, sys, datetime
 
 HOME = os.path.expanduser("~")
 MATRIX = f"{HOME}/.claude/MODEL-MATRIX.md"
@@ -28,17 +28,17 @@ def codex_models():
         raw = open(f"{HOME}/.codex/models_cache.json").read()
     except OSError:
         return deltas.append("codex: models_cache.json unreadable")
-    have = set(re.findall(r"gpt-(?:5\.[0-9]+|6-astra)(?:-[a-z]+)?", raw))
+    have = set(re.findall(r"gpt-\d+(?:\.\d+)?(?:-[a-z]+)*", raw))
     checked.append(f"codex models: {len(have)} found")
     for m in sorted(have):
-        if m not in M and not m.startswith("gpt-5.6"):
+        if m not in M and m != "gpt-5.5" and not m.startswith("gpt-5.6"):
             deltas.append(f"codex: NEW model `{m}` not in matrix -- evaluate reliability before adopting")
-    for pinned in ("gpt-5.5", "gpt-6-astra"):
+    for pinned in ("gpt-6.1-sol", "gpt-6-astra"):
         if pinned not in have:
-            deltas.append(f"codex: matrix relies on `{pinned}` but the account no longer offers it")
+            deltas.append(f"codex: matrix relies on `{pinned}` but it is absent from the local cache -- verify account access")
     cfg = open(f"{HOME}/.codex/config.toml").read()
     if re.search(r'^model\s*=\s*"gpt-5\.6', cfg, re.M):
-        deltas.append("codex: config.toml default is a gpt-5.6-* model (documented regression) -- repin gpt-5.5")
+        deltas.append("codex: config.toml default is a gpt-5.6-* model (documented regression) -- repin gpt-6.1-sol")
 
 
 def gemini_models():
@@ -68,17 +68,6 @@ def gemini_models():
         elif m not in normalized_matrix and "-pro" in m:
             deltas.append(f"gemini: NEW model `{m}` available -- consider for long/cheap classes")
 
-def ollama_models():
-    try:
-        out = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=30).stdout
-    except Exception:
-        return deltas.append("ollama: not reachable")
-    have = {l.split()[0] for l in out.splitlines()[1:] if l.strip()}
-    checked.append(f"ollama models: {len(have)}")
-    if not any("gpt-oss" in h for h in have):
-        deltas.append("ollama: gpt-oss:20b missing -- it is the only local model both harnesses can drive")
-
-
 def matrix_age():
     m = re.search(r"verified:\s*(\d{4}-\d{2}-\d{2})", M)
     if not m:
@@ -90,7 +79,7 @@ def matrix_age():
                       "-- re-verify Claude/Gemini pricing and check for model regressions online")
 
 
-for fn in (codex_models, gemini_models, ollama_models, matrix_age):
+for fn in (codex_models, gemini_models, matrix_age):
     try:
         fn()
     except Exception as e:
