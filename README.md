@@ -2,6 +2,8 @@
 
 Personal workstation configuration managed with [chezmoi](https://www.chezmoi.io/) and [mise](https://mise.jdx.dev/): shell, terminal, editor, and a portable AI agent toolstack.
 
+A magyar tooling-összefoglaló és a közös agentmunkafolyamat: [AI-TOOLING.md](AI-TOOLING.md).
+
 Targets macOS and Linux/WSL. Native Windows is best-effort (PowerShell profiles and Cursor settings only).
 
 ## Install on a clean machine
