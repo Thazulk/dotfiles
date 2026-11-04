@@ -232,3 +232,23 @@ TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
 | `headroom-ai` | Context/headroom accounting |
 | `fff` | Optional fast, frecency-ranked file finder |
 | `clockify` | Optional time tracking; needs `CLOCKIFY_API_KEY` |
+
+### Toolstack maintenance
+
+`update-ai-toolstack` refreshes Codex marketplaces and every user-scoped Claude
+plugin, then installs the versions declared in the mise manifest and re-registers
+MCP launchers. Disabled Claude plugins stay disabled. `TOOLSTACK_SKIP_MISE=1`
+skips package installation; pinned versions are advanced explicitly in the manifest.
+Failures produce a nonzero exit status. Authentication remains machine-local.
+
+The bootstrap installs Superpowers for both clients and the official
+`codex@openai-codex` and `ponytail@ponytail` plugins for Claude Code.
+Reload plugins or restart running clients after an update. If Claude Desktop is
+running, quit it and rerun `TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack` to persist
+its MCP config; the app can otherwise overwrite edits from its in-memory copy.
+
+CodeGraph requires an existing `.codegraph/codegraph.db` in the current project;
+its connection closing in an unindexed directory is expected. Checks and bootstrap
+never create project indexes. `check-ai-toolstack` also warns when old npm globals
+shadow the mise versions of Codebase Memory or ast-grep. Remove only the obsolete
+npm copies after confirming the declared mise installations are present.

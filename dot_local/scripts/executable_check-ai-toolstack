@@ -34,9 +34,25 @@ check_file() {
 }
 
 printf '%s\n' '==> AI toolstack check'
-for command in mise uv node npm pnpm rg ast-grep git gh docker go curl brew agent-health agent-route agent-quota matrix-evidence agent-ask-codex agent-ask-claude agent-ask-gemini rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codeburn fff-mcp codex claude ollama; do
+if [[ ! -f .codegraph/codegraph.db ]]; then
+    printf '%s\n' 'note: CodeGraph needs an existing project index; CONNECTION_CLOSED is expected in an unindexed cwd. No index is created by this check.'
+fi
+for command in mise uv node npm pnpm rg ast-grep git gh docker go curl brew agent-health agent-route agent-quota matrix-evidence agent-ask-codex agent-ask-claude agent-ask-gemini rtk ddgs headroom repowise context7-mcp codebase-memory-mcp codegraph codeburn fff-mcp codex claude coderabbit; do
     check_command "$command"
 done
+# Existing npm globals can shadow a newer standalone mise installation.
+if command -v mise >/dev/null 2>&1; then
+    for spec in 'codebase-memory-mcp npm:codebase-memory-mcp bin/codebase-memory-mcp' 'ast-grep ast-grep ast-grep'; do
+        read -r name tool relative <<< "$spec"
+        installed="$(mise where "$tool" 2>/dev/null || true)"
+        active="$(command -v "$name" 2>/dev/null || true)"
+        if [[ -x "$installed/$relative" && -n "$active" ]]; then
+            expected="$("$installed/$relative" --version 2>/dev/null)"
+            actual="$("$active" --version 2>/dev/null)"
+            [[ "$expected" == "$actual" ]] || printf 'WARNING: %s PATH version differs from mise: %s vs %s\n' "$name" "$actual" "$expected"
+        fi
+    done
+fi
 check_mise_tool playwright-mcp npm:@playwright/mcp
 check_mise_tool nx-mcp npm:nx-mcp
 

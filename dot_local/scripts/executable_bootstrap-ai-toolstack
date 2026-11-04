@@ -182,6 +182,18 @@ install_agent_plugins() {
             run codex plugin add "$id" || true
         fi
     fi
+    if have claude; then
+        local marketplace source plugin
+        for spec in 'openai-codex openai/codex-plugin-cc codex@openai-codex' 'ponytail DietrichGebert/ponytail ponytail@ponytail'; do
+            read -r marketplace source plugin <<< "$spec"
+            if ! claude plugin marketplace list --json | python3 -c 'import json,sys; sys.exit(not any(m["name"] == sys.argv[1] for m in json.load(sys.stdin)))' "$marketplace"; then
+                run claude plugin marketplace add "$source" --scope user --json || return 1
+            fi
+            if ! claude_plugin_installed "$plugin"; then
+                run claude plugin install "$plugin" --scope user --json || return 1
+            fi
+        done
+    fi
     if have claude && ! claude_plugin_installed "superpowers@claude-plugins-official"; then
         run claude plugin install superpowers@claude-plugins-official -y --scope user || true
     fi
@@ -218,7 +230,7 @@ if have nx-mcp; then
         add_mcp_if_missing nx-mcp "$(mise which nx-mcp --tool npm:nx-mcp)"
     fi
 fi
-have codebase-memory-mcp && add_mcp codebase-memory "$(mise which codebase-memory-mcp --tool npm:codebase-memory-mcp)"
+have codebase-memory-mcp && add_mcp codebase-memory "$(mise where npm:codebase-memory-mcp)/bin/codebase-memory-mcp"
 have playwright-mcp && add_mcp playwright "$(mise which playwright-mcp --tool npm:@playwright/mcp)"
 have brew && add_mcp homebrew "$(command -v brew)" mcp-server
 have codegraph && add_mcp codegraph "$(command -v codegraph)" serve

@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # Refresh agent plugin/tooling surfaces without changing project worktrees.
-set -u
+set -uo pipefail
+failed=0
 
 export PATH="$HOME/.local/bin:/opt/homebrew/bin:/usr/local/bin:$PATH"
 
@@ -13,6 +14,7 @@ run() {
         return 0
     fi
     say "WARNING: failed: $*" >&2
+    failed=1
     return 1
 }
 
@@ -20,9 +22,10 @@ codex_plugin_installed() {
     grep -q "\\[plugins\\.\"$1\"\\]" "$HOME/.codex/config.toml" 2>/dev/null
 }
 
-claude_plugin_installed() {
-    claude plugin list 2>/dev/null | grep -q "$1"
-}
+
+if have mise; then
+    eval "$(mise env --shell bash)"
+fi
 
 say "==> AI toolstack update"
 
@@ -40,20 +43,25 @@ fi
 
 if have claude; then
     run claude plugin marketplace update
-    if claude_plugin_installed superpowers@claude-plugins-official; then
-        run claude plugin update superpowers@claude-plugins-official -y --scope user --json
-    else
-        run claude plugin install superpowers@claude-plugins-official -y --scope user --json
-    fi
-    if claude_plugin_installed caveman@caveman; then
-        run claude plugin update caveman@caveman -y --scope user --json
-    fi
+    # Refresh every user-scoped installation, including disabled plugins, without enabling it.
+    plugins="$(claude plugin list --json)" || { failed=1; plugins='[]'; }
+    plugin_ids="$(printf '%s' "$plugins" | python3 -c 'import json,sys; print("\n".join(p["id"] for p in json.load(sys.stdin) if p.get("scope") == "user"))')" || failed=1
+    while IFS= read -r plugin; do
+        [[ -n "$plugin" ]] || continue
+        run claude plugin update "$plugin" --scope user --json || true
+    done <<< "$plugin_ids"
+
 else
     say "skip: claude is not installed"
 fi
 
+# Install declared versions; pinned tools are advanced deliberately in the manifest.
+if [[ "${TOOLSTACK_SKIP_MISE:-0}" != "1" ]] && have mise; then
+    run mise install || true
+fi
 if have bootstrap-ai-toolstack; then
-    TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack
+    run env TOOLSTACK_SKIP_MISE=1 bootstrap-ai-toolstack || true
 fi
 
-say "==> Done."
+say "==> Done (failures: $failed)."
+exit "$failed"
